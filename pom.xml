@@ -4,12 +4,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.cidaas</groupId>
-	<artifactId>cidaas-java-common-jwt-helper</artifactId>
+	<artifactId>cidaas-java-jwt-helper</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<description>JWT java helper for cidaas</description>
-	<name>cidaas-java-common-jwt-helper</name>
+	<name>cidaas-java-jwt-helper</name>
 
 	<licenses>
 		<license>
