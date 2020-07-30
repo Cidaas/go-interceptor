@@ -40,7 +40,7 @@
 	</distributionManagement>
 
 	<scm>
-		<connection>scm:git:https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-java-common-jwt-helper.git</connection>
+		<connection>scm:git:https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-java-jwt-helper.git</connection>
 		<tag>HEAD</tag>
 	</scm>
 
