@@ -1,18 +1,19 @@
 package de.cidaas.jwt;
 
 
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
+
 import de.cidaas.jwt.exceptions.JWTDecodeException;
 import de.cidaas.jwt.impl.JWTParser;
 import de.cidaas.jwt.interfaces.Claim;
 import de.cidaas.jwt.interfaces.DecodedJWT;
 import de.cidaas.jwt.interfaces.Header;
 import de.cidaas.jwt.interfaces.Payload;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.StringUtils;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The JWTDecoder class holds the decode method to parse a given JWT token into it's JWT representation.
@@ -128,7 +129,7 @@ final class JWTDecoder implements DecodedJWT {
     }
 
     @Override
-    public String getToken() {
+    public String getTokenAsString() {
         return String.format("%s.%s.%s", parts[0], parts[1], parts[2]);
     }
 }

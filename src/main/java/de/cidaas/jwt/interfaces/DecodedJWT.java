@@ -12,7 +12,7 @@ public interface DecodedJWT extends Payload, Header {
      *
      * @return the String Token.
      */
-    String getToken();
+    String getTokenAsString();
 
     /**
      * Getter for the Header contained in the JWT as a Base64 encoded String.
