@@ -41,7 +41,7 @@
 
 	<scm>
 		<connection>scm:git:git://github.com/Cidaas/cidaas-java-jwt-helper.git</connection>
-		<developerConnection>scm:git:ssh://github.com:Cidaas/cidaas-java-jwt-helper.git</developerConnection>
+		<developerConnection>scm:git:git://github.com/Cidaas/cidaas-java-jwt-helper.git</developerConnection>
 		<url>https://github.com/Cidaas/cidaas-java-jwt-helper/tree/master</url>
 	</scm>
 
