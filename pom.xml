@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.cidaas</groupId>
 	<artifactId>cidaas-java-jwt-helper</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 	<packaging>jar</packaging>
 
 	<description>JWT java helper for cidaas</description>
@@ -46,7 +44,7 @@
 
 	<scm>
 		<connection>scm:git:https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-java-jwt-helper.git</connection>
-		<tag>HEAD</tag>
+		<tag>cidaas-java-jwt-helper-0.0.2</tag>
 		<!-- <connection>scm:git:git://github.com/Cidaas/cidaas-java-jwt-helper.git</connection> 
 			<developerConnection>scm:git:git://github.com/Cidaas/cidaas-java-jwt-helper.git</developerConnection> 
 			<url>https://github.com/Cidaas/cidaas-java-jwt-helper/tree/master</url> <tag>cidaas-java-jwt-helper-0.0.2</tag> -->
