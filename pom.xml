@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.cidaas</groupId>
 	<artifactId>cidaas-java-jwt-helper</artifactId>
-	<version>0.2.0-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<description>JWT java helper for cidaas</description>
