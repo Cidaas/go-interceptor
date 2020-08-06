@@ -66,6 +66,11 @@
 			<artifactId>commons-codec</artifactId>
 			<version>1.14</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.6</version>
+		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -89,38 +94,38 @@
 				<version>3.0.0-M1</version>
 			</plugin>
 			<plugin>
-    			<groupId>org.jacoco</groupId>
-    			<artifactId>jacoco-maven-plugin</artifactId>
-    			<version>0.8.2</version>
-    			<executions>
-    				<execution>
-    					<id>default-prepare-agent</id>
-    					<goals>
-    						<goal>prepare-agent</goal>
-    					</goals>
-    				</execution>
-    				<execution>
-    					<id>default-report</id>
-    					<phase>prepare-package</phase>
-    					<goals>
-    						<goal>report</goal>
-    					</goals>
-    				</execution>
-    				<execution>
-    					<id>default-check</id>
-    					<goals>
-    						<goal>check</goal>
-    					</goals>
-    					<configuration>
-    					    <rules>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.2</version>
+				<executions>
+					<execution>
+						<id>default-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-report</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
 							</rules>
 							<configuration>
 								<dataFile>${basedir}/target/coverage-reports/jacoco-unit.exec</dataFile>
 							</configuration>
-    					</configuration>
-    				</execution>
-    			</executions>
-    		</plugin>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>
