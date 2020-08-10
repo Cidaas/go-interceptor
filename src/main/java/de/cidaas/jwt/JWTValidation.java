@@ -1,7 +1,5 @@
 package de.cidaas.jwt;
 
-import java.net.URI;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
@@ -18,16 +16,8 @@ import de.cidaas.jwt.models.IntrospectionRequest;
 import de.cidaas.jwt.models.IntrospectionResponse;
 
 public class JWTValidation {
+	
 	private ObjectMapper objectMapper;
-
-	private static JWTValidation jwtValidation;
-
-	public static synchronized JWTValidation getInstance() {
-		if (jwtValidation == null) {
-			jwtValidation = new JWTValidation();
-		}
-		return jwtValidation;
-	}
 
 	public JWTValidation() {
 		objectMapper = new ObjectMapper();
@@ -35,17 +25,14 @@ public class JWTValidation {
 		objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
 	}
 	
-	public IntrospectionResponse validateWithIntrospection(String token, String tokenType, String clientId, String clientSecret, String issuer) throws JWTVerificationException {
-		IntrospectionRequest requestInfo = new IntrospectionRequest(token, tokenType);
-		requestInfo.setClient_id(clientId);
-		requestInfo.setClient_secret(clientSecret);
-		
-		return validateWithIntrospection(requestInfo, issuer);
+	public IntrospectionResponse validateWithIntrospection(String token, String tokenTypeHint, String clientId, String introspectionURI) throws JWTVerificationException {
+		return validateWithIntrospection(new IntrospectionRequest(token, tokenTypeHint, clientId), introspectionURI);
 	}
 	
-	public IntrospectionResponse validateWithIntrospection(IntrospectionRequest tokenInfo, String issuer) throws JWTVerificationException {
+	public IntrospectionResponse validateWithIntrospection(IntrospectionRequest tokenInfo, String introspectionURI) throws JWTVerificationException {
+		
 		try {
-			HttpPost request = new HttpPost(new URI(issuer + "/token-srv/introspect"));
+			HttpPost request = new HttpPost(introspectionURI);
 			request.setEntity(new StringEntity(objectMapper.writeValueAsString(tokenInfo)));
 			request.addHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
 
