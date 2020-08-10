@@ -40,8 +40,8 @@
 	</distributionManagement>
 
 	<scm>
-		<connection>scm:git:git://github.com/Cidaas/cidaas-java-jwt-helper.git</connection>
-		<developerConnection>scm:git:git://github.com/Cidaas/cidaas-java-jwt-helper.git</developerConnection>
+		<connection>scm:git:https://github.com/Cidaas/cidaas-java-jwt-helper.git</connection>
+		<developerConnection>scm:git:https://github.com/Cidaas/cidaas-java-jwt-helper.git</developerConnection>
 		<url>https://github.com/Cidaas/cidaas-java-jwt-helper/tree/master</url>
 		<tag>HEAD</tag>
 	</scm>
