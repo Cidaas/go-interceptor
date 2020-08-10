@@ -46,13 +46,12 @@ public class OpenIdConfigurationLoader {
 
 			HttpResponse response = HttpClientBuilder.create().build().execute(request);
 			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-				openIdConfiguration = objectMapper.readValue(response.getEntity().getContent(),
-						OpenIdConfiguration.class);
+				openIdConfiguration = objectMapper.readValue(response.getEntity().getContent(), OpenIdConfiguration.class);
 			} else {
-				logger.warn("The http rest call was not successful: {}", response);
+				throw new Exception("The http rest call was not successful and returned: " + response.getStatusLine().getStatusCode());
 			}
 		} catch (Exception e) {
-			throw new Exception("Error while resolving the openid-configuration, Error : " + e);
+			throw new Exception("Error while resolving the openid-configuration" + e);
 		}
 	}
 
@@ -75,13 +74,14 @@ public class OpenIdConfigurationLoader {
 			OpenIdConfiguration config = getOpenIdConfiguration(issuer, false);
 			if (config != null && !Strings.isNullOrEmpty(config.getIntrospection_endpoint())) {
 				return config.getIntrospection_endpoint();
+			} else {
+				throw new Exception("The introspection endpoint from the open id config object was null or emtpy");
 			}
 		} catch (Exception e) {
-			logger.error("Couldn't get open id configuration from issuer" ,e);
+			logger.error("Couldn't get open id configuration from issuer, continuing with default url: " + 
+					CidaasConstants.getIntrospectionDefaultURI(issuer), e);
 		}
-		
-		String defaultURI = CidaasConstants.getIntrospectionDefaultURI(issuer);
-		logger.warn("Was not able to load open id configuratiom from issuer, using default introspection uri as fallback: {}", defaultURI);
-		return defaultURI;
+
+		return CidaasConstants.getIntrospectionDefaultURI(issuer);
 	}
 }
