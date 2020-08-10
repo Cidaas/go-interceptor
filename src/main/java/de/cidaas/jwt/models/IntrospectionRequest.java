@@ -9,11 +9,15 @@ public class IntrospectionRequest implements Serializable {
 	private String token;
     private String token_type_hint;
     private String client_id;
-    private String client_secret;
 
-    public IntrospectionRequest(String token, String tokenType) {
+    public IntrospectionRequest(String token, String tokenType, String clientId) {
     	this.token = token;
     	this.token_type_hint = tokenType;
+    	this.client_id = clientId;
+    }
+    
+    public IntrospectionRequest(String token, String tokenType) {
+    	this(token, tokenType, null);
     }
     
     public String getToken() {
@@ -38,13 +42,5 @@ public class IntrospectionRequest implements Serializable {
 
     public void setClient_id(String client_id) {
         this.client_id = client_id;
-    }
-
-    public String getClient_secret() {
-        return client_secret;
-    }
-
-    public void setClient_secret(String client_secret) {
-        this.client_secret = client_secret;
     }
 }
