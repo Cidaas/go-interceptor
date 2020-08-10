@@ -64,7 +64,7 @@ public class OpenIdConfigurationLoader {
 	 */
 	private void loadOpenIdConfiguration(String issuer) throws Exception {
 		try {
-			HttpGet request = new HttpGet(CidaasConstants.getOpenIdConfigURI(issuer));
+			HttpGet request = new HttpGet(CidaasConstants.getOpenIdConfigURL(issuer));
 			request.addHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
 
 			HttpResponse response = HttpClientBuilder.create().build().execute(request);
@@ -101,9 +101,9 @@ public class OpenIdConfigurationLoader {
 	 * for the introspection end point
 	 *
 	 * @param issuer the base URL of the issuer
-	 * @return the introspection URI from the issuer
+	 * @return the introspection URL from the issuer
 	 */
-	public String getIntrospectionURI(String issuer) {
+	public String getIntrospectionURL(String issuer) {
 
 		try {
 			OpenIdConfiguration config = getOpenIdConfiguration(issuer, false);
@@ -114,9 +114,9 @@ public class OpenIdConfigurationLoader {
 			}
 		} catch (Exception e) {
 			logger.error("Couldn't get open id configuration from issuer, continuing with default url: " + 
-					CidaasConstants.getIntrospectionDefaultURI(issuer), e);
+					CidaasConstants.getIntrospectionDefaultURL(issuer), e);
 		}
 
-		return CidaasConstants.getIntrospectionDefaultURI(issuer);
+		return CidaasConstants.getIntrospectionDefaultURL(issuer);
 	}
 }

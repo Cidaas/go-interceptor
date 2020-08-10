@@ -15,25 +15,50 @@ import de.cidaas.jwt.exceptions.JWTVerificationException;
 import de.cidaas.jwt.models.IntrospectionRequest;
 import de.cidaas.jwt.models.IntrospectionResponse;
 
+/**
+ * The Class JWTValidation.
+ */
 public class JWTValidation {
 	
+	/** The object mapper. */
 	private ObjectMapper objectMapper;
 
+	/**
+	 * Instantiates a new JWT validation.
+	 */
 	public JWTValidation() {
 		objectMapper = new ObjectMapper();
 		objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
 	}
 	
-	public IntrospectionResponse validateWithIntrospection(String token, String tokenTypeHint, String clientId, String introspectionURI) throws JWTVerificationException {
-		return validateWithIntrospection(new IntrospectionRequest(token, tokenTypeHint, clientId), introspectionURI);
+	/**
+	 * Validate with introspection.
+	 *
+	 * @param token the token as string
+	 * @param tokenTypeHint the token type hint
+	 * @param clientId the client id
+	 * @param introspectionURL the URL of the introspection end point
+	 * @return the introspection response
+	 * @throws JWTVerificationException the JWT verification exception
+	 */
+	public IntrospectionResponse validateWithIntrospection(String token, String tokenTypeHint, String clientId, String introspectionURL) throws JWTVerificationException {
+		return validateWithIntrospection(new IntrospectionRequest(token, tokenTypeHint, clientId), introspectionURL);
 	}
 	
-	public IntrospectionResponse validateWithIntrospection(IntrospectionRequest tokenInfo, String introspectionURI) throws JWTVerificationException {
+	/**
+	 * Validate with introspection.
+	 *
+	 * @param introspectionRequest the request object for the introspection call
+	 * @param introspectionURL the URL of the introspection end point
+	 * @return the introspection response
+	 * @throws JWTVerificationException the JWT verification exception
+	 */
+	public IntrospectionResponse validateWithIntrospection(IntrospectionRequest introspectionRequest, String introspectionURL) throws JWTVerificationException {
 		
 		try {
-			HttpPost request = new HttpPost(introspectionURI);
-			request.setEntity(new StringEntity(objectMapper.writeValueAsString(tokenInfo)));
+			HttpPost request = new HttpPost(introspectionURL);
+			request.setEntity(new StringEntity(objectMapper.writeValueAsString(introspectionRequest)));
 			request.addHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
 
 			HttpResponse response = HttpClientBuilder.create().build().execute(request);
