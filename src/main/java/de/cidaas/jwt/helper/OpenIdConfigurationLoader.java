@@ -16,14 +16,26 @@ import com.google.common.base.Strings;
 import de.cidaas.jwt.constants.CidaasConstants;
 import de.cidaas.jwt.models.OpenIdConfiguration;
 
+/**
+ * The Class OpenIdConfigurationLoader.
+ */
 public class OpenIdConfigurationLoader {
 
+	/** The Constant logger. */
 	private final static Logger logger = LoggerFactory.getLogger(OpenIdConfigurationLoader.class);
 
+	/** The instance. */
 	private static OpenIdConfigurationLoader instance;
+	
+	/** The open id configuration. */
 	private OpenIdConfiguration openIdConfiguration;
+	
+	/** The object mapper. */
 	private ObjectMapper objectMapper;
 
+	/**
+	 * Instantiates a new open id configuration loader.
+	 */
 	private OpenIdConfigurationLoader() {
 		objectMapper = new ObjectMapper();
 		objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -32,6 +44,11 @@ public class OpenIdConfigurationLoader {
 		openIdConfiguration = null;
 	}
 
+	/**
+	 * Gets the single instance of OpenIdConfigurationLoader.
+	 *
+	 * @return single instance of OpenIdConfigurationLoader
+	 */
 	public static synchronized OpenIdConfigurationLoader getInstance() {
 		if (instance == null) {
 			instance = new OpenIdConfigurationLoader();
@@ -39,6 +56,12 @@ public class OpenIdConfigurationLoader {
 		return instance;
 	}
 
+	/**
+	 * Load open id configuration.
+	 *
+	 * @param issuer the base URL of the issuer
+	 * @throws Exception
+	 */
 	private void loadOpenIdConfiguration(String issuer) throws Exception {
 		try {
 			HttpGet request = new HttpGet(CidaasConstants.getOpenIdConfigURI(issuer));
@@ -51,23 +74,35 @@ public class OpenIdConfigurationLoader {
 				throw new Exception("The http rest call was not successful and returned: " + response.getStatusLine().getStatusCode());
 			}
 		} catch (Exception e) {
-			throw new Exception("Error while resolving the openid-configuration" + e);
+			throw new Exception("Error while resolving the openid-configuration", e);
 		}
 	}
 
+	/**
+	 * Gets the open id configuration.
+	 *
+	 * @param issuer the base URL of the issuer
+	 * @param forceReload if the open id configuration should be fetched again
+	 * @return the open id configuration
+	 * @throws Exception
+	 */
 	public OpenIdConfiguration getOpenIdConfiguration(String issuer, boolean forceReload) throws Exception {
 
-		if (forceReload) {
-			openIdConfiguration = null;
-		}
-
-		if (openIdConfiguration == null) {
+		if (openIdConfiguration == null || forceReload) {
 			loadOpenIdConfiguration(issuer);
 		}
 
 		return openIdConfiguration;
 	}
 
+	/**
+	 * Gets the introspection URI from the open id configuration object.
+	 * If the configuration could not be loaded, this method returns the default URI
+	 * for the introspection end point
+	 *
+	 * @param issuer the base URL of the issuer
+	 * @return the introspection URI from the issuer
+	 */
 	public String getIntrospectionURI(String issuer) {
 
 		try {
