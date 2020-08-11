@@ -50,6 +50,7 @@
 
 	<scm>
 		<connection>scm:git:https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-java-jwt-helper.git</connection>
+		<url>scm:git:https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-java-jwt-helper.git</url>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -125,7 +126,6 @@
 						<artifactId>maven-deploy-plugin</artifactId>
 						<version>2.7</version>
 					</plugin>
-					
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
