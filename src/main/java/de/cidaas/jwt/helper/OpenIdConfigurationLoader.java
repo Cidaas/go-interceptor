@@ -48,10 +48,11 @@ public class OpenIdConfigurationLoader {
 		openIdConfiguration = null;
 	}
 	
+	
 	/**
 	 * Sets the proxy.
 	 *
-	 * @param HttpHost the new proxy
+	 * @param proxy the new proxy
 	 */
 	public void setProxy(final HttpHost proxy){
 		this.proxy = proxy;
