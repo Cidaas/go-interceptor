@@ -1,5 +1,6 @@
 package de.cidaas.jwt.helper;
 
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
@@ -32,6 +33,9 @@ public class OpenIdConfigurationLoader {
 	
 	/** The object mapper. */
 	private ObjectMapper objectMapper;
+	
+	/** Proxy configuration. */
+	private HttpHost proxy;
 
 	/**
 	 * Instantiates a new open id configuration loader.
@@ -42,6 +46,15 @@ public class OpenIdConfigurationLoader {
 		objectMapper = objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
 
 		openIdConfiguration = null;
+	}
+	
+	/**
+	 * Sets the proxy.
+	 *
+	 * @param HttpHost the new proxy
+	 */
+	public void setProxy(final HttpHost proxy){
+		this.proxy = proxy;
 	}
 
 	/**
@@ -60,14 +73,20 @@ public class OpenIdConfigurationLoader {
 	 * Load open id configuration.
 	 *
 	 * @param issuer the base URL of the issuer
-	 * @throws Exception
+	 * @throws Exception the exception
 	 */
 	private void loadOpenIdConfiguration(String issuer) throws Exception {
 		try {
 			HttpGet request = new HttpGet(CidaasConstants.getOpenIdConfigURL(issuer));
 			request.addHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
-
-			HttpResponse response = HttpClientBuilder.create().build().execute(request);
+			
+			HttpClientBuilder builder = HttpClientBuilder.create();
+			
+			if(proxy != null)
+				builder.setProxy(proxy);
+			
+			HttpResponse response = builder.build().execute(request);
+			
 			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
 				openIdConfiguration = objectMapper.readValue(response.getEntity().getContent(), OpenIdConfiguration.class);
 			} else {
@@ -84,7 +103,7 @@ public class OpenIdConfigurationLoader {
 	 * @param issuer the base URL of the issuer
 	 * @param forceReload if the open id configuration should be fetched again
 	 * @return the open id configuration
-	 * @throws Exception
+	 * @throws Exception the exception
 	 */
 	public OpenIdConfiguration getOpenIdConfiguration(String issuer, boolean forceReload) throws Exception {
 
