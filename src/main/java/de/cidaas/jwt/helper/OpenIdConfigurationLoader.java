@@ -6,6 +6,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,9 @@ public class OpenIdConfigurationLoader {
 	
 	/** Proxy configuration. */
 	private HttpHost proxy;
+	
+	/** If the default system properties should be used for the HTTPClientBuilder **/
+	private boolean useSystemProperties = false;
 
 	/**
 	 * Instantiates a new open id configuration loader.
@@ -56,6 +60,15 @@ public class OpenIdConfigurationLoader {
 	 */
 	public void setProxy(final HttpHost proxy){
 		this.proxy = proxy;
+	}
+	
+	/**
+	 * Sets the useSystemProperties.
+	 * 
+	 * @param useSystemProperties
+	 */
+	public void setUseSystemProperties(boolean useSystemProperties) {
+		this.useSystemProperties = useSystemProperties;
 	}
 
 	/**
@@ -81,7 +94,13 @@ public class OpenIdConfigurationLoader {
 			HttpGet request = new HttpGet(CidaasConstants.getOpenIdConfigURL(issuer));
 			request.addHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
 			
-			HttpClientBuilder builder = HttpClientBuilder.create();
+			HttpClientBuilder builder = null;
+			
+			if (useSystemProperties) {
+				builder = HttpClients.custom().useSystemProperties();
+			} else {				
+				builder = HttpClientBuilder.create();
+			}
 			
 			if(proxy != null)
 				builder.setProxy(proxy);

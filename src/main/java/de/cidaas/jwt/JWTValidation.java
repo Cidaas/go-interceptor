@@ -7,6 +7,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HTTP;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -26,6 +27,9 @@ public class JWTValidation {
 	
 	/** Proxy configuration. */
 	private HttpHost proxy;
+	
+	/** If the default system properties should be used for the HTTPClientBuilder **/
+	private boolean useSystemProperties = false;
 
 	/**
 	 * Instantiates a new JWT validation.
@@ -43,6 +47,15 @@ public class JWTValidation {
 	 */
 	public void setProxy(final HttpHost proxy){
 		this.proxy = proxy;
+	}
+	
+	/**
+	 * Sets the useSystemProperties.
+	 * 
+	 * @param useSystemProperties
+	 */
+	public void setUseSystemProperties(boolean useSystemProperties) {
+		this.useSystemProperties = useSystemProperties;
 	}
 	
 	/**
@@ -74,7 +87,12 @@ public class JWTValidation {
 			request.setEntity(new StringEntity(objectMapper.writeValueAsString(introspectionRequest)));
 			request.addHeader(HTTP.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
 			
-			HttpClientBuilder builder = HttpClientBuilder.create();
+			HttpClientBuilder builder;
+			if (useSystemProperties) {
+				builder = HttpClients.custom().useSystemProperties();
+			} else {				
+				builder = HttpClientBuilder.create();
+			}
 			
 			if(proxy != null)
 				builder.setProxy(proxy);
