@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.cidaas</groupId>
 	<artifactId>cidaas-java-jwt-helper</artifactId>
-	<version>1.0.2-SNAPSHOT</version>
+	<version>1.0.2</version>
 	<packaging>jar</packaging>
 
 	<description>JWT java helper for cidaas</description>
@@ -49,7 +49,7 @@
 	<scm>
 		<connection>scm:git:git@gitlab.widas.de:cidaas-public-devkits/cidaas-interceptors/cidaas-java-jwt-helper.git</connection>
 		<url>scm:git:git@gitlab.widas.de:cidaas-public-devkits/cidaas-interceptors/cidaas-java-jwt-helper.git</url>
-		<tag>HEAD</tag>
+		<tag>cidaas-java-jwt-helper-1.0.2</tag>
 	</scm>
 
 	<dependencies>
