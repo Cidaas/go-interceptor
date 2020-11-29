@@ -1,4 +1,4 @@
-package gointerceptor
+package cidaasinterceptor
 
 import (
 	"bytes"
