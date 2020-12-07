@@ -1,18 +1,11 @@
 image: golang:latest
 
 stages:
-  - sast
   - test
 
 include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
-
-sast:
-  stage: sast
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
 
 test:
   stage: test
