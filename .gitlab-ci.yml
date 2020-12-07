@@ -1,5 +1,8 @@
 image: golang:latest
 
+include:
+  - template: Security/SAST.gitlab-ci.yml
+
 variables:
   # Please edit to your GitLab project
   REPO_NAME: https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-go-interceptor
