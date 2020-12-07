@@ -18,7 +18,3 @@ test:
     - go vet $(go list ./... | grep -v /vendor/)
     - go test -v -cover $(go list ./... | grep -v /vendor/)
 
-artifacts:
-    reports:
-      sast: gl-sast-report.json
-
