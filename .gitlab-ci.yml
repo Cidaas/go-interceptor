@@ -6,6 +6,11 @@ stages:
 include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Code-Quality.gitlab-ci.yml
+
+code_quality:
+  artifacts:
+    paths: [gl-code-quality-report.json]
 
 test:
   stage: test
