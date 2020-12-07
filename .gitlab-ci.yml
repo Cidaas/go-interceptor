@@ -2,6 +2,7 @@ image: golang:latest
 
 include:
   - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables:
   # Please edit to your GitLab project
@@ -16,3 +17,8 @@ test:
     - go fmt $(go list ./... | grep -v /vendor/)
     - go vet $(go list ./... | grep -v /vendor/)
     - go test -v -cover $(go list ./... | grep -v /vendor/)
+
+artifacts:
+    reports:
+      sast: gl-sast-report.json
+
