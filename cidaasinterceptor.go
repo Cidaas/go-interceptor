@@ -125,10 +125,6 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 			return
 		}
 
-		// Create RSAPublicKey from PEM
-		//pem := "-----BEGIN CERTIFICATE-----\n" + "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCeV6D7vGJtnpJCm489R4HYJlywycB0cVnXVn60Lwo5EglcpkXfeLDfpn1uzhtweN6J8jCvUr5PzC76k2XreiTwfUVdDUtVkH/NoRJE6AhQgzyh36WYJgNXkIIplHFBA8dVoW1GepCqkSvx2nAfRYLCWdjUaN+Ct2WrYTE0lfamPQIDAQAB" + "\n-----END CERTIFICATE-----"
-		//cert, _ := jwt.ParseRSAPublicKeyFromPEM([]byte(pem))
-
 		// Parse Token
 		token, err := jwt.ParseWithClaims(tokenString, &cidaasTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 			// Validate Signing Method
@@ -202,7 +198,13 @@ func (m *CidaasInterceptor) VerifyTokenByIntrospect(next http.Handler, scopes []
 
 		// Map Introspect call response (decode)
 		var introspectRespBody introspectResponse
-		json.NewDecoder(resp.Body).Decode(&introspectRespBody)
+		errDec := json.NewDecoder(resp.Body).Decode(&introspectRespBody)
+		if errDec != nil {
+			log.Printf("Error mapping introspect Response: %v", err)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		log.Println(introspectRespBody)
 		// Check if token is active, if not return Unauthorized, root cause could be that token is expired or revoked
 		if !introspectRespBody.Active {

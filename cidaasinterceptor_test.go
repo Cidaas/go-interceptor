@@ -96,6 +96,40 @@ func TestFailure_getTokenFromAuthHeader_WrongHeader(t *testing.T) {
 	assert.Equal(t, "Invalid Token - not of type: Bearer", err.Error(), "Authorization header should be malformed")
 }
 
+// TestSuccess_ContainsScopesSameArray tests that the Contains functionality works properly for same Arrays
+func TestSuccess_ContainsScopesSameArray(t *testing.T) {
+
+	requestedData := []string{"TestScope", "openid", "profile"}
+	tokenData := []string{"TestScope", "openid", "profile"}
+	isValid := Contains(tokenData, requestedData)
+	assert.True(t, isValid, "Requested scopes should be in tokenData")
+}
+
+// TestSuccess_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with less items then in tokenData
+func TestSuccess_ContainsScopesRequestedDataArrayWithLessItems(t *testing.T) {
+	tokenData := []string{"TestScope", "openid", "profile"}
+	isValid := Contains(tokenData, nil)
+	assert.True(t, isValid, "Requested scopes should be in tokenData")
+}
+
+// TestSuccess_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with less items then in tokenData
+func TestSuccess_ContainsWithEmptyArray(t *testing.T) {
+
+	requestedData := []string{"TestScope", "openid"}
+	tokenData := []string{"TestScope", "openid", "profile"}
+	isValid := Contains(tokenData, requestedData)
+	assert.True(t, isValid, "Requested scopes should be in tokenData")
+}
+
+// TestFailure_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with less items then in tokenData
+func TestFailure_ContainsScopesRequestedDataArrayWithMoreItems(t *testing.T) {
+
+	requestedData := []string{"TestScope", "openid", "profile", "email"}
+	tokenData := []string{"TestScope", "openid", "profile"}
+	isValid := Contains(tokenData, requestedData)
+	assert.False(t, isValid, "Requested scopes should be more than in tokenData")
+}
+
 // TestSuccess_getKey tests that a key from a jwks can be selected successfully based on kid
 func TestSuccess_getKey(t *testing.T) {
 	token := jwt.New(jwt.SigningMethodRS256)
