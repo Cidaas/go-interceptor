@@ -48,7 +48,7 @@ func main() {
 
 ```
 
-**Attached an example how to secure an API with scopes and roles based on on an introspect call to the cidaas instance:**
+**Attached an example how to secure an API with scopes and roles based on an introspect call to the cidaas instance:**
 
 ```go
 
