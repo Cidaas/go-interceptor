@@ -165,7 +165,7 @@ func TestIntrospectHandlerFailure_NoToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient", ClientSecret: "testSecret"}, cidaasEndpoints{}, Jwks{}}
+	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, Jwks{}}
 	handler := http.Handler(cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code, "handler should return 200 status code")
@@ -179,7 +179,7 @@ func TestSignatureHandlerFailure_NoToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient", ClientSecret: "testSecret"}, cidaasEndpoints{}, Jwks{}}
+	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, Jwks{}}
 	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code, "handler should return 200 status code")
@@ -206,7 +206,7 @@ func TestSignatureHandlerFailure_InvalidSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient", ClientSecret: "testSecret"}, cidaasEndpoints{}, jwks}
+	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, jwks}
 	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code, "handler should return 200 status code")
@@ -231,7 +231,7 @@ func TestSignatureHandlerSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient", ClientSecret: "testSecret"}, cidaasEndpoints{}, jwks}
+	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, jwks}
 	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code, "handler should return 200 status code")

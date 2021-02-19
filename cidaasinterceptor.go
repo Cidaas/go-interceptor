@@ -18,9 +18,8 @@ import (
 
 // Options passed to the Interceptor (Base URI, ClientID, Client Secret)
 type Options struct {
-	BaseURI      string
-	ClientID     string
-	ClientSecret string
+	BaseURI  string
+	ClientID string
 }
 
 // CidaasInterceptor to secure APIs based on OAuth 2.0
@@ -80,9 +79,9 @@ type cidaasTokenClaims struct {
 
 // New returns a newly constructed cidaasInterceptor instance with the provided options
 func New(opts Options) (*CidaasInterceptor, error) {
-	if opts == (Options{}) || opts.BaseURI == "" || opts.ClientID == "" || opts.ClientSecret == "" {
-		log.Printf("No options passed! BaseURI: %v, ClientID: %v, ClientSecret: %v", opts.BaseURI, opts.ClientID, opts.ClientSecret)
-		return nil, errors.New("No options passed")
+	if opts == (Options{}) || opts.BaseURI == "" {
+		log.Printf("No options passed! BaseURI: %v", opts.BaseURI)
+		return nil, errors.New("No Base URI passed")
 	}
 	log.Println("Initialization started")
 	resp, err := http.Get(opts.BaseURI + "/.well-known/openid-configuration")
@@ -165,6 +164,14 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			if m.Options.ClientID != "" {
+				if claims.Audience != m.Options.ClientID {
+					log.Println("Aud mismatch!")
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+			}
+
 		} else {
 			log.Println("Issue with claims")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -225,6 +232,15 @@ func (m *CidaasInterceptor) VerifyTokenByIntrospect(next http.Handler, scopes []
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+
+		if m.Options.ClientID != "" {
+			if introspectRespBody.Aud != m.Options.ClientID {
+				log.Println("Aud mismatch!")
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
