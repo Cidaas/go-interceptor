@@ -16,7 +16,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// Options passed to the Interceptor (Base URI, ClientID, Client Secret)
+// Options passed to the Interceptor (Base URI, ClientID)
 type Options struct {
 	BaseURI  string
 	ClientID string
