@@ -4,7 +4,12 @@ include:
     file: 'ci_templates/go.gitlab-ci.yml'
 
 stages:
+  - prepare
   - test
+  - build
+  - pre_release
+  - release
+  - package
 
 include:
   - template: Security/SAST.gitlab-ci.yml
