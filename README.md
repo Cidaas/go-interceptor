@@ -34,7 +34,9 @@ func get(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
-	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID", ClientSecret: "clientSecret"})
+
+	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
 
 	if err != nil {
 		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
@@ -64,7 +66,9 @@ func get(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
-	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID", ClientSecret: "clientSecret"})
+
+	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID")
 
 	if err != nil {
 		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
