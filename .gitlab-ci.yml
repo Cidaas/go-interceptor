@@ -6,8 +6,4 @@ include:
 stages:
   - prepare
   - test
-  - build
-  - pre_release
-  - release
-  - package
 
