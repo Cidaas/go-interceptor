@@ -1,6 +1,6 @@
 include:
   - project: 'widas/codequality'
-    ref: master
+    ref: add_coverage_report
     file: 'ci_templates/go_lib.gitlab-ci.yml'
     
   - project: 'widas/codequality'
