@@ -12,4 +12,3 @@ stages:
   - test
   - pre_release
   - release
-
