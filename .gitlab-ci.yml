@@ -11,3 +11,13 @@ stages:
   - test
   - build
   - release
+
+get_version:
+  image: alpine:latest
+  stage: prepare
+  script:
+    - echo "PACKAGE_VERSION="$(cat version.txt) >> deploy.env
+  artifacts:
+    reports:
+      dotenv:
+        - deploy.env
