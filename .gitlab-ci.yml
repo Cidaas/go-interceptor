@@ -12,7 +12,7 @@ stages:
   - build
   - release
 
-get_timestamp:
+get_version:
   image: alpine:latest
   stage: prepare
   script:
