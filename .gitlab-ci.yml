@@ -3,7 +3,7 @@ include:
     ref: master
     file: 'ci_templates/go_lib.gitlab-ci.yml'
   - project: 'cidaas-management/cidaas-versioning-ci-templates'
-    ref: feature/add-generic-release-yml
+    ref: master
     file: 'generic-release.yml'
 
 stages:
