@@ -2,6 +2,7 @@ package cidaasinterceptor
 
 import (
 	"bytes"
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -15,6 +16,15 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 )
+
+type contextKey int
+
+const tokenDataKey contextKey = 3941119
+
+type TokenData struct {
+	Sub string
+	Aud string
+}
 
 // Options passed to the Interceptor (Base URI, ClientID)
 type Options struct {
@@ -37,6 +47,7 @@ type introspectResponse struct {
 	Iss    string   `json:"iss"`
 	Active bool     `json:"active"`
 	Aud    string   `json:"aud"`
+	Sub    string   `json:"sub"`
 	Roles  []string `json:"roles"`
 	Scopes []string `json:"scopes"`
 }
@@ -81,7 +92,7 @@ type cidaasTokenClaims struct {
 func New(opts Options) (*CidaasInterceptor, error) {
 	if opts == (Options{}) || opts.BaseURI == "" {
 		log.Printf("No options passed! BaseURI: %v", opts.BaseURI)
-		return nil, errors.New("No Base URI passed")
+		return nil, errors.New("no Base URI passed")
 	}
 	log.Println("Initialization started")
 	resp, err := http.Get(opts.BaseURI + "/.well-known/openid-configuration")
@@ -128,11 +139,11 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 		token, err := jwt.ParseWithClaims(tokenString, &cidaasTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 			// Validate Signing Method
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			pem, err := getKey(token, m.jwks)
 			if err != nil {
-				return nil, fmt.Errorf("No key found for: %v", token.Header["kid"])
+				return nil, fmt.Errorf("no key found for: %v", token.Header["kid"])
 			}
 			return pem, nil
 		})
@@ -143,6 +154,8 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 			http.Error(w, "Invalid Token", http.StatusUnauthorized)
 			return
 		}
+		sub := ""
+		aud := ""
 
 		if claims, ok := token.Claims.(*cidaasTokenClaims); ok && token.Valid {
 			// Check for roles and scopes in token data
@@ -171,13 +184,15 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 					return
 				}
 			}
-
+			sub = claims.Subject
+			aud = claims.Audience
 		} else {
 			log.Println("Issue with claims")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		rWithTokenData := r.WithContext(context.WithValue(r.Context(), tokenDataKey, TokenData{Sub: sub, Aud: aud}))
+		next.ServeHTTP(w, rWithTokenData)
 	})
 }
 
@@ -193,6 +208,11 @@ func (m *CidaasInterceptor) VerifyTokenByIntrospect(next http.Handler, scopes []
 		}
 		// Marshal Token to introspectRequest and perform POST Call to Introspect Endpoint
 		introspectReqBody, err := json.Marshal(introspectRequest{tokenString, "access_token"})
+		if err != nil {
+			log.Printf("Error mapping introspect request: %v", err)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		resp, err := http.Post(m.endpoints.IntrospectionEndpoint, "application/json", bytes.NewBuffer(introspectReqBody))
 
 		// If Introspect was not successful log error and return Unauthorized
@@ -240,8 +260,8 @@ func (m *CidaasInterceptor) VerifyTokenByIntrospect(next http.Handler, scopes []
 				return
 			}
 		}
-
-		next.ServeHTTP(w, r)
+		rWithTokenData := r.WithContext(context.WithValue(r.Context(), tokenDataKey, TokenData{Sub: introspectRespBody.Sub, Aud: introspectRespBody.Aud}))
+		next.ServeHTTP(w, rWithTokenData)
 	})
 }
 
@@ -250,28 +270,28 @@ func getTokenFromAuthHeader(r *http.Request) (s string, err error) {
 	authorizationHeader := r.Header.Get("Authorization")
 	// check if Authorization token is set
 	if authorizationHeader == "" {
-		return "", errors.New("Missing Authorization header")
+		return "", errors.New("missing Authorization header")
 	}
 	log.Println("Authorization Header: " + authorizationHeader)
 
 	// Remove bearer in the authorization header
 	authorizationHeaderParts := strings.Fields(authorizationHeader)
 	if len(authorizationHeaderParts) != 2 || strings.ToLower(authorizationHeaderParts[0]) != "bearer" {
-		return "", errors.New("Invalid Token - not of type: Bearer")
+		return "", errors.New("invalid Token - not of type: Bearer")
 	}
 	return authorizationHeaderParts[1], nil
 }
 
 // CheckScopesAndRoles based on Introspect Response and requested scopes and roles
 func CheckScopesAndRoles(tokenScopes []string, tokenRoles []string, scopes []string, roles []string) bool {
-	if scopes != nil && len(scopes) > 0 {
+	if scopes != nil || len(scopes) > 0 {
 		// Check for request scopes in token data
 		if !Contains(tokenScopes, scopes) {
 			log.Println("Scopes mismatch")
 			return false
 		}
 	}
-	if roles != nil && len(roles) > 0 {
+	if roles != nil || len(roles) > 0 {
 		// Check for request roles in token data
 		if !Contains(tokenRoles, roles) {
 			log.Println("Roles mismatch")
@@ -311,7 +331,7 @@ func getKey(token *jwt.Token, jwks Jwks) (*rsa.PublicKey, error) {
 		}
 	}
 
-	err := errors.New("Unable to find appropriate key")
+	err := errors.New("unable to find appropriate key")
 	return nil, err
 
 }
