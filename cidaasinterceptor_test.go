@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -83,7 +84,7 @@ func TestFailure_getTokenFromAuthHeader_NoHeader(t *testing.T) {
 	header, err := getTokenFromAuthHeader(req)
 	assert.NotNil(t, err)
 	assert.Equal(t, "", header, "Authorization header should be there")
-	assert.Equal(t, "Missing Authorization header", err.Error(), "Authorization header should be missing")
+	assert.Equal(t, "missing Authorization header", err.Error(), "Authorization header should be missing")
 }
 
 // TestFailure_getTokenFromAuthHeader_WrongHeader tests that if no Authorization header is there an error is returned - Authorization Header / Token not of type bearer
@@ -93,7 +94,7 @@ func TestFailure_getTokenFromAuthHeader_WrongHeader(t *testing.T) {
 	header, err := getTokenFromAuthHeader(req)
 	assert.NotNil(t, err)
 	assert.Equal(t, "", header, "Authorization header should be there")
-	assert.Equal(t, "Invalid Token - not of type: Bearer", err.Error(), "Authorization header should be malformed")
+	assert.Equal(t, "invalid Token - not of type: Bearer", err.Error(), "Authorization header should be malformed")
 }
 
 // TestSuccess_ContainsScopesSameArray tests that the Contains functionality works properly for same Arrays
@@ -154,7 +155,7 @@ func TestFailure_getKey(t *testing.T) {
 	cert, err := getKey(token, jwks)
 	assert.NotNil(t, err)
 	assert.Nil(t, cert, "Cert/Key should be a empty string")
-	assert.Equal(t, "Unable to find appropriate key", err.Error(), "error should be - Unable to find appropriate key")
+	assert.Equal(t, "unable to find appropriate key", err.Error(), "error should be - Unable to find appropriate key")
 }
 
 // TestIntrospectHandlerFailure_NoToken tests that a 401 status code is returned when no token is passed
@@ -234,12 +235,20 @@ func TestSignatureHandlerSuccess(t *testing.T) {
 	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "clientTest"}, cidaasEndpoints{}, jwks}
 	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
 	handler.ServeHTTP(rr, req)
+
+	var tokenData TokenData
+	json.NewDecoder(rr.Body).Decode(&tokenData)
+	assert.Equal(t, "clientTest", tokenData.Aud, "Aud in tokenData should be passed as context in request and be equal")
+	assert.Equal(t, "ANONYMOUS", tokenData.Sub, "Sub in tokenData should be passed as context in request and be equal")
 	assert.Equal(t, http.StatusOK, rr.Code, "handler should return 200 status code")
 }
 
 // healthCheckHandler will return an empty 200 OK response
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	tokenData := r.Context().Value(tokenDataKey).(TokenData)
 	w.WriteHeader(http.StatusOK)
+	jsonData, _ := json.Marshal(tokenData)
+	w.Write(jsonData)
 }
 
 func ExportRsaPublicKeyAsPemStr(pubkey *rsa.PublicKey) (string, error) {
