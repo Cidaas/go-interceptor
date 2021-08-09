@@ -245,7 +245,7 @@ func TestSignatureHandlerSuccess(t *testing.T) {
 
 // healthCheckHandler will return an empty 200 OK response
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	tokenData := r.Context().Value(tokenDataKey).(TokenData)
+	tokenData := r.Context().Value(TokenDataKey).(TokenData)
 	w.WriteHeader(http.StatusOK)
 	jsonData, _ := json.Marshal(tokenData)
 	w.Write(jsonData)

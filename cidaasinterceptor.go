@@ -17,9 +17,9 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type contextKey int
+type ContextKey int
 
-const tokenDataKey contextKey = 3941119
+const TokenDataKey ContextKey = 3941119
 
 type TokenData struct {
 	Sub string
@@ -191,7 +191,7 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		rWithTokenData := r.WithContext(context.WithValue(r.Context(), tokenDataKey, TokenData{Sub: sub, Aud: aud}))
+		rWithTokenData := r.WithContext(context.WithValue(r.Context(), TokenDataKey, TokenData{Sub: sub, Aud: aud}))
 		next.ServeHTTP(w, rWithTokenData)
 	})
 }
@@ -260,7 +260,7 @@ func (m *CidaasInterceptor) VerifyTokenByIntrospect(next http.Handler, scopes []
 				return
 			}
 		}
-		rWithTokenData := r.WithContext(context.WithValue(r.Context(), tokenDataKey, TokenData{Sub: introspectRespBody.Sub, Aud: introspectRespBody.Aud}))
+		rWithTokenData := r.WithContext(context.WithValue(r.Context(), TokenDataKey, TokenData{Sub: introspectRespBody.Sub, Aud: introspectRespBody.Aud}))
 		next.ServeHTTP(w, rWithTokenData)
 	})
 }
