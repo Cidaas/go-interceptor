@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -190,8 +190,17 @@ func TestSignatureHandlerFailure_NoToken(t *testing.T) {
 func TestSignatureHandlerFailure_InvalidSignature(t *testing.T) {
 	token := jwt.New(jwt.SigningMethodRS256)
 	token.Header["kid"] = "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536"
-	standardClaims := jwt.StandardClaims{Audience: "clientTest", ExpiresAt: time.Now().Unix() + 1000, Issuer: "https://base.cidaas.de", Id: "7da05fac-0f79-4925-bb58-ab9602cb581f", Subject: "ANONYMOUS", IssuedAt: time.Now().Unix()}
-	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, StandardClaims: standardClaims}
+	//standardClaims := jwt.StandardClaims{Audience: "clientTest", ExpiresAt: time.Now().Unix() + 1000, Issuer: "https://base.cidaas.de", Id: "7da05fac-0f79-4925-bb58-ab9602cb581f", Subject: "ANONYMOUS", IssuedAt: time.Now().Unix()}
+	registeredClaims := jwt.RegisteredClaims{
+		Issuer:    "https://base.cidaas.de",
+		Subject:   "ANONYMOUS",
+		Audience:  jwt.ClaimStrings{"clientTest"},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(1000 * time.Second)),
+		NotBefore: nil,
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ID:        "7da05fac-0f79-4925-bb58-ab9602cb581f",
+	}
+	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, RegisteredClaims: registeredClaims}
 	rsakey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	s, _ := token.SignedString(rsakey)
 	_, err := ExportRsaPublicKeyAsPemStr(&rsakey.PublicKey)
@@ -217,8 +226,17 @@ func TestSignatureHandlerFailure_InvalidSignature(t *testing.T) {
 func TestSignatureHandlerSuccess(t *testing.T) {
 	token := jwt.New(jwt.SigningMethodRS256)
 	token.Header["kid"] = "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536"
-	standardClaims := jwt.StandardClaims{Audience: "clientTest", ExpiresAt: time.Now().Unix() + 1000, Issuer: "https://base.cidaas.de", Id: "7da05fac-0f79-4925-bb58-ab9602cb581f", Subject: "ANONYMOUS", IssuedAt: time.Now().Unix()}
-	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, StandardClaims: standardClaims}
+	registeredClaims := jwt.RegisteredClaims{
+		Issuer:    "https://base.cidaas.de",
+		Subject:   "ANONYMOUS",
+		Audience:  jwt.ClaimStrings{"clientTest"},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(1000 * time.Second)),
+		NotBefore: nil,
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ID:        "7da05fac-0f79-4925-bb58-ab9602cb581f",
+	}
+	//standardClaims := jwt.StandardClaims{Audience: "clientTest", ExpiresAt: time.Now().Unix() + 1000, Issuer: "https://base.cidaas.de", Id: "7da05fac-0f79-4925-bb58-ab9602cb581f", Subject: "ANONYMOUS", IssuedAt: time.Now().Unix()}
+	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, RegisteredClaims: registeredClaims}
 	rsakey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	s, _ := token.SignedString(rsakey)
 	key1 := JSONWebKey{N: base64.RawURLEncoding.EncodeToString(rsakey.N.Bytes()), E: "AQAB", Alg: "RS256", Use: "sig", Kid: "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536", Kty: "RSA"}
