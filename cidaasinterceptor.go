@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type contextKey int
@@ -85,7 +85,7 @@ type JSONWebKey struct {
 type cidaasTokenClaims struct {
 	Roles  []string `json:"roles"`
 	Scopes []string `json:"scopes"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // New returns a newly constructed cidaasInterceptor instance with the provided options
@@ -172,20 +172,20 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 				return
 			}
 			//Verify exp times in token data based on current timestamp
-			if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
+			if !claims.VerifyExpiresAt(time.Now(), true) {
 				log.Println("Token expired!")
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 			if m.Options.ClientID != "" {
-				if claims.Audience != m.Options.ClientID {
+				if claims.Audience[0] != m.Options.ClientID {
 					log.Println("Aud mismatch!")
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
 					return
 				}
 			}
 			sub = claims.Subject
-			aud = claims.Audience
+			aud = claims.Audience[0]
 		} else {
 			log.Println("Issue with claims")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
