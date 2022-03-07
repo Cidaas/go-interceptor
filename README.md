@@ -71,13 +71,76 @@ func main() {
 	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID")
 
 	if err != nil {
-		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
-		panic("Panic!")
-	}
+log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
+panic("Panic!")
+}
 
-	getHandler := http.HandlerFunc(get)
-	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:api_scope"}, nil)).Methods(http.MethodGet)
-	log.Fatal(http.ListenAndServe(":8080", r))
+getHandler := http.HandlerFunc(get)
+api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:api_scope"}, nil)).Methods(http.MethodGet)
+log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 ```
+
+### [Fiber](https://github.com/gofiber/fiber) integration
+
+Add [Fiber Adaptor](https://github.com/gofiber/adaptor ) to your project
+
+```
+go get -u github.com/gofiber/fiber/v2
+go get -u github.com/gofiber/adaptor/v2
+```
+
+then use cidaasinterceptor as following Code snippet
+```go
+func CreateApp() (*fiber.App, error) {
+
+	interceptor, err := interceptor.New(options.InterceptorOptions{
+		AppName:     base.ServiceName,
+		EnableDebug: true,
+	})
+	if err != nil {
+		ls.Fatal().Err(err).Msg("can't initialize interceptor")
+	}
+
+	app := fiber.New()
+
+	app.Use(cors.New())
+	app.Use("/monit", monitor.New())
+	app.Get("/ping", func(ctx *fiber.Ctx) error {
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"data": "Pong",
+		})
+	})
+	//Root route
+	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
+
+	root.Get("/ping", func(ctx *fiber.Ctx) error {
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"data": "Pong",
+		})
+	})
+
+	root.Post("/user", authMiddleware(interceptor, handler.SampleHandler, nil, nil))
+
+	return app, nil
+}
+
+func authMiddleware(interceptor *interceptor.CidaasInterceptor, resourceHandlerFunc fiber.Handler, scopes []string, roles []string) fiber.Handler {
+options := options.EndpointOptions{
+Scopes: scopes,
+Roles:  roles,
+}
+return adaptor.HTTPHandler(interceptor.VerifyTokenBySignature(middlewares.JSONMiddleware(adaptor.FiberHandlerFunc(resourceHandlerFunc)), options))
+}
+
+func main()  {
+    app, err := CreateApp()
+	if err != nil {
+		panic(err)
+    }
+	app.Listen(":3000")
+}
+```
+
+Add required Scopes and Roles to your interceptor
