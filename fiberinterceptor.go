@@ -58,7 +58,7 @@ func NewFiberInterceptor(opts Options) (*CidaasInterceptor, error) {
 }
 
 // VerifyTokenBySignature (check for exp time and scopes and roles)
-func (m *FiberInterceptor) VerifyTokenBySignature(ctx *fiber.Ctx, scopes []string, roles []string) fiber.Handler {
+func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []string) fiber.Handler {
 	return fiber.Handler(func(ctx *fiber.Ctx) error {
 		tokenString := getToken(ctx.Request())
 
