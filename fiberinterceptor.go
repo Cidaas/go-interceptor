@@ -23,7 +23,7 @@ type FiberInterceptor struct {
 const FiberTokenDataKey = "tokendata"
 
 // New returns a newly constructed cidaasInterceptor instance with the provided options
-func NewFiberInterceptor(opts Options) (*CidaasInterceptor, error) {
+func NewFiberInterceptor(opts Options) (*FiberInterceptor, error) {
 	if opts == (Options{}) || opts.BaseURI == "" {
 		log.Printf("No options passed! BaseURI: %v", opts.BaseURI)
 		return nil, errors.New("no Base URI passed")
@@ -50,7 +50,7 @@ func NewFiberInterceptor(opts Options) (*CidaasInterceptor, error) {
 		return nil, err
 	}
 
-	return &CidaasInterceptor{
+	return &FiberInterceptor{
 		Options:   opts,
 		endpoints: CidaasEndpoints,
 		jwks:      keys,
