@@ -88,16 +88,20 @@ Add [Fiber Adaptor](https://github.com/gofiber/adaptor ) to your project
 
 ```
 go get -u github.com/gofiber/fiber/v2
-go get -u github.com/gofiber/adaptor/v2
 ```
 
 then use cidaasinterceptor as following Code snippet
 ```go
+
+import (
+	cidaasinterceptor "github.com/Cidaas/go-interceptor"
+)
+
 func CreateApp() (*fiber.App, error) {
 
-	interceptor, err := interceptor.New(options.InterceptorOptions{
-		AppName:     base.ServiceName,
-		EnableDebug: true,
+	interceptor, err := cidaasinterceptor.NewFiberInterceptor(cidaasinterceptor.Options{
+		BaseURI:  BaseUrl,
+		ClientID: Client_id,
 	})
 	if err != nil {
 		ls.Fatal().Err(err).Msg("can't initialize interceptor")
@@ -121,17 +125,9 @@ func CreateApp() (*fiber.App, error) {
 		})
 	})
 
-	root.Post("/user", authMiddleware(interceptor, handler.SampleHandler, nil, nil))
+	root.Post("/user", inter.VerifyTokenBySignature([]string{}, []string{}), handler.UserHandler)
 
 	return app, nil
-}
-
-func authMiddleware(interceptor *interceptor.CidaasInterceptor, resourceHandlerFunc fiber.Handler, scopes []string, roles []string) fiber.Handler {
-options := options.EndpointOptions{
-Scopes: scopes,
-Roles:  roles,
-}
-return adaptor.HTTPHandler(interceptor.VerifyTokenBySignature(middlewares.JSONMiddleware(adaptor.FiberHandlerFunc(resourceHandlerFunc)), options))
 }
 
 func main()  {
