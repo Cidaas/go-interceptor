@@ -159,8 +159,6 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 
 		if claims, ok := token.Claims.(*cidaasTokenClaims); ok && token.Valid {
 			// Check for roles and scopes in token data
-			log.Printf("Scopes: %v", claims.Scopes)
-			log.Printf("Roles: %v", claims.Roles)
 			if !CheckScopesAndRoles(claims.Scopes, claims.Roles, scopes, roles) {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
@@ -272,7 +270,6 @@ func getTokenFromAuthHeader(r *http.Request) (s string, err error) {
 	if authorizationHeader == "" {
 		return "", errors.New("missing Authorization header")
 	}
-	log.Println("Authorization Header: " + authorizationHeader)
 
 	// Remove bearer in the authorization header
 	authorizationHeaderParts := strings.Fields(authorizationHeader)
@@ -359,8 +356,6 @@ func getKeys(baseURI string) (Jwks, error) {
 
 func extractPublicKeyFromJWK(jwk JSONWebKey) (publicKey *rsa.PublicKey, err error) {
 	// decode the base64 bytes for n
-	log.Printf("N: %v", jwk.N)
-	log.Printf("kid: %v", jwk.Kid)
 	nb, err := base64.RawURLEncoding.DecodeString(jwk.N)
 	if err != nil {
 		log.Fatal(err)
