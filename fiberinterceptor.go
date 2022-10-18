@@ -22,7 +22,7 @@ type FiberInterceptor struct {
 
 const FiberTokenDataKey = "tokendata"
 
-// New returns a newly constructed cidaasInterceptor instance with the provided options
+// NewFiberInterceptor returns a newly constructed cidaasInterceptor instance with the provided options
 func NewFiberInterceptor(opts Options) (*FiberInterceptor, error) {
 	if opts == (Options{}) || opts.BaseURI == "" {
 		log.Printf("No options passed! BaseURI: %v", opts.BaseURI)
@@ -101,7 +101,7 @@ func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []strin
 				log.Println("Issuer mismatch")
 				return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 			}
-			//Verify exp times in token data based on current timestamp
+			// Verify exp times in token data based on current timestamp
 			if !claims.VerifyExpiresAt(time.Now(), true) {
 				log.Println("Token expired!")
 				return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
