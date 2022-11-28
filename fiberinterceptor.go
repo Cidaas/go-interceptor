@@ -76,6 +76,16 @@ func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []strin
 			}
 			pem, err := getKey(token, m.jwks)
 			if err != nil {
+				log.Printf("Reloading keys for Kid : %v", token.Header["kid"])
+				keys, err := getKeys(m.Options.BaseURI)
+				if err != nil {
+					return nil, err
+				}
+				m.jwks = keys
+				pem, err1 := getKey(token, m.jwks)
+				if err1 == nil {
+					return pem, nil
+				}
 				return nil, fmt.Errorf("no key found for: %v", token.Header["kid"])
 			}
 			return pem, nil
