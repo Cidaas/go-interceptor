@@ -108,24 +108,24 @@ func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []strin
 			}
 			// Verify issuer in token data based on baseURI given in options of interceptor
 			if !claims.VerifyIssuer(m.Options.BaseURI, true) {
-				log.Println("Issuer mismatch")
+				log.Printf("Issuer mismatch, issuer: %v, base URI: %v", claims.Issuer, m.Options.BaseURI)
 				return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 			}
 			// Verify exp times in token data based on current timestamp
 			if !claims.VerifyExpiresAt(time.Now(), true) {
-				log.Println("Token expired!")
+				log.Printf("Token expired!, expiration: %v, now: %v", claims.ExpiresAt, time.Now())
 				return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 			}
 			if m.Options.ClientID != "" {
 				if claims.Audience[0] != m.Options.ClientID {
-					log.Println("Aud mismatch!")
+					log.Printf("Aud mismatch!, aud: %v, clientID: %v", claims.Audience[0], m.Options.ClientID)
 					return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 				}
 			}
 			sub = claims.Subject
 			aud = claims.Audience[0]
 		} else {
-			log.Println("Issue with claims")
+			log.Println("Issue without claims")
 			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 		ctx.Locals(FiberTokenDataKey, TokenData{Aud: aud, Sub: sub})
