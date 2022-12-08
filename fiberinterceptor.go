@@ -136,6 +136,75 @@ func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []strin
 	})
 }
 
+// VerifyTokenByIntrospect (check for exp time, issuer and scopes and roles)
+func (m *FiberInterceptor) VerifyTokenByIntrospect(scopes []string, roles []string) fiber.Handler {
+	return fiber.Handler(func(ctx *fiber.Ctx) error {
+		// Get Token From Auth Header
+		tokenString := getToken(ctx.Request())
+
+		// Error in getting Token from AuthHeader
+		if tokenString == "" {
+			log.Printf("Error getting token from Header")
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Marshal Token to introspectRequest and perform POST Call to Introspect Endpoint
+		introspectReqBody, err := json.Marshal(introspectRequest{tokenString, "access_token"})
+		if err != nil {
+			log.Printf("Error mapping introspect request: %v", err)
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+		if m.Options.Debug {
+			log.Printf("IntrospectReqBody: %v", introspectReqBody)
+		}
+
+		resp, err := http.Post(m.endpoints.IntrospectionEndpoint, "application/json", bytes.NewBuffer(introspectReqBody))
+
+		// If Introspect was not successful log error and return Unauthorized
+		if err != nil {
+			log.Printf("Error calling introspect: %v", err)
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+		defer resp.Body.Close()
+
+		var introspectRespBody introspectResponse
+		errDec := json.NewDecoder(resp.Body).Decode(&introspectRespBody)
+		if errDec != nil {
+			log.Printf("Error mapping introspect Response: %v", err)
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		if m.Options.Debug {
+			log.Printf("IntrospectRespBody: %v", introspectRespBody)
+		}
+
+		if !introspectRespBody.Active {
+			log.Printf("Token Expired/Revoked: Token.Active: %v", introspectRespBody.Active)
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Check for issuer in token data
+		if introspectRespBody.Iss != m.Options.BaseURI {
+			log.Printf("Issuer mismatch, issuer: %v, base URI: %v", introspectRespBody.Iss, m.Options.BaseURI)
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Check for roles and scopes in token data
+		if !CheckScopesAndRoles(introspectRespBody.Scopes, introspectRespBody.Roles, scopes, roles) {
+			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		if m.Options.ClientID != "" {
+			if introspectRespBody.Aud != m.Options.ClientID {
+				log.Println("Aud mismatch!")
+				return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+			}
+		}
+		ctx.Locals(FiberTokenDataKey, TokenData{Sub: introspectRespBody.Sub, Aud: introspectRespBody.Aud})
+		return ctx.Next()
+	})
+}
+
 func getHeaderString(key string, r *fasthttp.Request) string {
 	return string(r.Header.Peek(key))
 }
