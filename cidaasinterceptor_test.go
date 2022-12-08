@@ -106,14 +106,14 @@ func TestSuccess_ContainsScopesSameArray(t *testing.T) {
 	assert.True(t, isValid, "Requested scopes should be in tokenData")
 }
 
-// TestSuccess_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with less items then in tokenData
+// TestSuccess_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with fewer items than in tokenData
 func TestSuccess_ContainsScopesRequestedDataArrayWithLessItems(t *testing.T) {
 	tokenData := []string{"TestScope", "openid", "profile"}
 	isValid := Contains(tokenData, nil)
 	assert.True(t, isValid, "Requested scopes should be in tokenData")
 }
 
-// TestSuccess_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with less items then in tokenData
+// TestSuccess_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with fewer items than in tokenData
 func TestSuccess_ContainsWithEmptyArray(t *testing.T) {
 
 	requestedData := []string{"TestScope", "openid"}
@@ -122,7 +122,7 @@ func TestSuccess_ContainsWithEmptyArray(t *testing.T) {
 	assert.True(t, isValid, "Requested scopes should be in tokenData")
 }
 
-// TestFailure_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with less items then in tokenData
+// TestFailure_ContainsScopesRequestedDataArrayWithLessItems tests that the Contains functionality works properly for requestedData Array with fewer items than in tokenData
 func TestFailure_ContainsScopesRequestedDataArrayWithMoreItems(t *testing.T) {
 
 	requestedData := []string{"TestScope", "openid", "profile", "email"}
@@ -167,7 +167,7 @@ func TestIntrospectHandlerFailure_NoToken(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, Jwks{}}
-	handler := http.Handler(cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
+	handler := cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil)
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code, "handler should return 200 status code")
 }
@@ -181,7 +181,7 @@ func TestSignatureHandlerFailure_NoToken(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, Jwks{}}
-	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
+	handler := cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil)
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code, "handler should return 200 status code")
 }
@@ -190,7 +190,6 @@ func TestSignatureHandlerFailure_NoToken(t *testing.T) {
 func TestSignatureHandlerFailure_InvalidSignature(t *testing.T) {
 	token := jwt.New(jwt.SigningMethodRS256)
 	token.Header["kid"] = "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536"
-	//standardClaims := jwt.StandardClaims{Audience: "clientTest", ExpiresAt: time.Now().Unix() + 1000, Issuer: "https://base.cidaas.de", Id: "7da05fac-0f79-4925-bb58-ab9602cb581f", Subject: "ANONYMOUS", IssuedAt: time.Now().Unix()}
 	registeredClaims := jwt.RegisteredClaims{
 		Issuer:    "https://base.cidaas.de",
 		Subject:   "ANONYMOUS",
@@ -217,7 +216,7 @@ func TestSignatureHandlerFailure_InvalidSignature(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "testClient"}, cidaasEndpoints{}, jwks}
-	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
+	handler := cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil)
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code, "handler should return 200 status code")
 }
@@ -235,7 +234,6 @@ func TestSignatureHandlerSuccess(t *testing.T) {
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		ID:        "7da05fac-0f79-4925-bb58-ab9602cb581f",
 	}
-	//standardClaims := jwt.StandardClaims{Audience: "clientTest", ExpiresAt: time.Now().Unix() + 1000, Issuer: "https://base.cidaas.de", Id: "7da05fac-0f79-4925-bb58-ab9602cb581f", Subject: "ANONYMOUS", IssuedAt: time.Now().Unix()}
 	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, RegisteredClaims: registeredClaims}
 	rsakey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	s, _ := token.SignedString(rsakey)
@@ -251,7 +249,7 @@ func TestSignatureHandlerSuccess(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	cidaasInterceptor := CidaasInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "clientTest"}, cidaasEndpoints{}, jwks}
-	handler := http.Handler(cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil))
+	handler := cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:compromissed_credentials"}, nil)
 	handler.ServeHTTP(rr, req)
 
 	var tokenData TokenData
