@@ -30,6 +30,7 @@ type TokenData struct {
 type Options struct {
 	BaseURI  string
 	ClientID string
+	Debug    bool
 }
 
 // CidaasInterceptor to secure APIs based on OAuth 2.0
@@ -179,7 +180,7 @@ func (m *CidaasInterceptor) VerifyTokenBySignature(next http.Handler, scopes []s
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			//Verify exp times in token data based on current timestamp
+			// Verify exp times in token data based on current timestamp
 			if !claims.VerifyExpiresAt(time.Now(), true) {
 				log.Println("Token expired!")
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)

@@ -1,6 +1,7 @@
 package cidaasinterceptor
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -101,8 +102,10 @@ func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []strin
 
 		if claims, ok := token.Claims.(*cidaasTokenClaims); ok && token.Valid {
 			// Check for roles and scopes in token data
-			log.Printf("Scopes: %v", claims.Scopes)
-			log.Printf("Roles: %v", claims.Roles)
+			if m.Options.Debug {
+				log.Printf("Scopes: %v", claims.Scopes)
+				log.Printf("Roles: %v", claims.Roles)
+			}
 			if !CheckScopesAndRoles(claims.Scopes, claims.Roles, scopes, roles) {
 				return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 			}
