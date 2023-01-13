@@ -60,7 +60,7 @@ func NewFiberInterceptor(opts Options) (*FiberInterceptor, error) {
 
 // VerifyTokenBySignature (check for exp time and scopes and roles)
 func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []string) fiber.Handler {
-	return fiber.Handler(func(ctx *fiber.Ctx) error {
+	return func(ctx *fiber.Ctx) error {
 		tokenString := getToken(ctx.Request())
 
 		// Error in getting Token from AuthHeader
@@ -133,12 +133,12 @@ func (m *FiberInterceptor) VerifyTokenBySignature(scopes []string, roles []strin
 		}
 		ctx.Locals(FiberTokenDataKey, TokenData{Aud: aud, Sub: sub})
 		return ctx.Next()
-	})
+	}
 }
 
 // VerifyTokenByIntrospect (check for exp time, issuer and scopes and roles)
 func (m *FiberInterceptor) VerifyTokenByIntrospect(scopes []string, roles []string) fiber.Handler {
-	return fiber.Handler(func(ctx *fiber.Ctx) error {
+	return func(ctx *fiber.Ctx) error {
 		// Get Token From Auth Header
 		tokenString := getToken(ctx.Request())
 
@@ -155,7 +155,7 @@ func (m *FiberInterceptor) VerifyTokenByIntrospect(scopes []string, roles []stri
 			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 		if m.Options.Debug {
-			log.Printf("IntrospectReqBody: %v", introspectReqBody)
+			log.Printf("IntrospectReqBody: %v", string(introspectReqBody))
 		}
 
 		resp, err := http.Post(m.endpoints.IntrospectionEndpoint, "application/json", bytes.NewBuffer(introspectReqBody))
@@ -202,7 +202,7 @@ func (m *FiberInterceptor) VerifyTokenByIntrospect(scopes []string, roles []stri
 		}
 		ctx.Locals(FiberTokenDataKey, TokenData{Sub: introspectRespBody.Sub, Aud: introspectRespBody.Aud})
 		return ctx.Next()
-	})
+	}
 }
 
 func getHeaderString(key string, r *fasthttp.Request) string {
