@@ -241,7 +241,9 @@ func (m *CidaasInterceptor) VerifyTokenByIntrospect(next http.Handler, scopes []
 			return
 		}
 
-		log.Println(introspectRespBody)
+		if m.Options.Debug {
+			log.Printf("IntrospectRespBody: %v", introspectRespBody)
+		}
 		// Check if token is active, if not return Unauthorized, root cause could be that token is expired or revoked
 		if !introspectRespBody.Active {
 			log.Printf("Token Expired/Revoked: Token.Active: %v", introspectRespBody.Active)
