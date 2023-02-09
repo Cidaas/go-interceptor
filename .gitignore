@@ -17,3 +17,6 @@
 
 .idea
 .vscode
+
+.cov*
+cov*
