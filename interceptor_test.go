@@ -48,7 +48,7 @@ func TestSuccess_CheckScopesAndRoles_ScopesAndRolesInToken(t *testing.T) {
 	scopes := []string{"profile", "email"}
 	roles := []string{"USER", "DEVELOPER"}
 	opts := SecurityOptions{Scopes: scopes, Roles: roles}
-	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts), "roles and scopes should match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts, false), "roles and scopes should match")
 }
 
 func TestSuccess_CheckScopesAndRoles_AdditionalScopesAndRoles(t *testing.T) {
@@ -57,21 +57,21 @@ func TestSuccess_CheckScopesAndRoles_AdditionalScopesAndRoles(t *testing.T) {
 	scopes := []string{"profile", "email"}
 	roles := []string{"USER", "DEVELOPER"}
 	opts := SecurityOptions{Scopes: scopes, Roles: roles}
-	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts), "roles and scopes should match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts, false), "roles and scopes should match")
 }
 
 func TestSuccess_CheckScopes_ScopesInToken(t *testing.T) {
 	tokenScopes := []string{"profile", "email"}
 	scopes := []string{"profile", "email"}
 	opts := SecurityOptions{Scopes: scopes}
-	assert.True(t, checkScopesAndRoles(tokenScopes, nil, opts), "scopes should match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, nil, opts, false), "scopes should match")
 }
 
 func TestSuccess_CheckRoles_RolesInToken(t *testing.T) {
 	tokenRoles := []string{"USER", "DEVELOPER"}
 	roles := []string{"USER", "DEVELOPER"}
 	opts := SecurityOptions{Roles: roles}
-	assert.True(t, checkScopesAndRoles(nil, tokenRoles, opts), "roles should match")
+	assert.True(t, checkScopesAndRoles(nil, tokenRoles, opts, false), "roles should match")
 }
 
 func TestFailure_CheckScopesAndRoles_MissingScopesInToken(t *testing.T) {
@@ -80,28 +80,28 @@ func TestFailure_CheckScopesAndRoles_MissingScopesInToken(t *testing.T) {
 	scopes := []string{"profile", "email"}
 	roles := []string{"USER", "DEVELOPER"}
 	opts := SecurityOptions{Scopes: scopes, Roles: roles}
-	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts), "scopes should match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts, false), "scopes should match")
 }
 
 func TestFailure_CheckScopesAndRoles_StrictScopeValidation(t *testing.T) {
 	tokenScopes := []string{"profile"}
 	scopes := []string{"profile", "email"}
 	opts := SecurityOptions{Scopes: scopes, StrictScopeValidation: true}
-	assert.False(t, checkScopesAndRoles(tokenScopes, nil, opts), "scopes should not match")
+	assert.False(t, checkScopesAndRoles(tokenScopes, nil, opts, false), "scopes should not match")
 }
 
 func TestSuccess_CheckScopes_StrictValidation(t *testing.T) {
 	tokenScopes := []string{"profile"}
 	scopes := []string{"profile", "email"}
 	opts := SecurityOptions{Scopes: scopes, StrictValidation: true}
-	assert.True(t, checkScopesAndRoles(tokenScopes, nil, opts), "one of the scopes should match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, nil, opts, false), "one of the scopes should match")
 }
 
 func TestSuccess_CheckScopesAndRoles_StrictValidation(t *testing.T) {
 	tokenScopes := []string{"profile", "email"}
 	scopes := []string{"profile", "email"}
 	opts := SecurityOptions{Scopes: scopes, StrictValidation: true}
-	assert.True(t, checkScopesAndRoles(tokenScopes, nil, opts), "scopes should match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, nil, opts, false), "scopes should match")
 }
 
 func TestFailure_CheckScopesAndRoles_NotAllRolesMatch(t *testing.T) {
@@ -110,7 +110,23 @@ func TestFailure_CheckScopesAndRoles_NotAllRolesMatch(t *testing.T) {
 	scopes := []string{"profile", "email"}
 	roles := []string{"USER", "DEVELOPER"}
 	opts := SecurityOptions{Scopes: scopes, Roles: roles}
-	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts), "roles should not match")
+	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts, false), "roles should not match")
+}
+
+func TestFailure_CheckScopesAndRoles_IsAnynymousScopesMatchRolesIgnored(t *testing.T) {
+	tokenScopes := []string{"profile", "email"}
+	tokenRoles := []string{"USER"}
+	scopes := []string{"profile", "email"}
+	roles := []string{"DEVELOPER"}
+	opts := SecurityOptions{Scopes: scopes, Roles: roles}
+	assert.True(t, checkScopesAndRoles(tokenScopes, tokenRoles, opts, true), "roles should not match but still valid due to anonymous")
+}
+
+func TestFailure_CheckScopesAndRoles_IsAnynymousRolesIgnored(t *testing.T) {
+	tokenRoles := []string{"USER"}
+	roles := []string{"DEVELOPER"}
+	opts := SecurityOptions{Roles: roles}
+	assert.True(t, checkScopesAndRoles(nil, tokenRoles, opts, true), "roles should not match but still valid due to anonymous")
 }
 
 func TestSuccess_ContainsScopesSameArray(t *testing.T) {
@@ -173,7 +189,15 @@ func TestSuccess_ContainsScopesRequestedDataArrayWithMoreItems(t *testing.T) {
 	assert.True(t, isValid, "Requested scopes should be more than in tokenData")
 }
 
+func createToken(t *testing.T, pk *rsa.PrivateKey, issuer string, setExpired bool, keyID ...string) string {
+	return createTokenWithScopesAndRoles(t, pk, issuer, setExpired, []string{"profile", "cidaas:compromissed_credentials"}, nil, keyID...)
+}
+
 func createTokenWithScopesAndRoles(t *testing.T, pk *rsa.PrivateKey, issuer string, setExpired bool, scopes []string, roles []string, keyID ...string) string {
+	return createTokenWithScopesRolesSub(t, pk, issuer, setExpired, scopes, roles, "sub", keyID...)
+}
+
+func createTokenWithScopesRolesSub(t *testing.T, pk *rsa.PrivateKey, issuer string, setExpired bool, scopes []string, roles []string, sub string, keyID ...string) string {
 	token := jwt.New(jwt.SigningMethodRS256)
 	kid := "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536"
 	if len(keyID) != 0 {
@@ -190,7 +214,7 @@ func createTokenWithScopesAndRoles(t *testing.T, pk *rsa.PrivateKey, issuer stri
 	token.Header["kid"] = kid
 	registeredClaims := jwt.RegisteredClaims{
 		Issuer:    iss,
-		Subject:   "sub",
+		Subject:   sub,
 		Audience:  jwt.ClaimStrings{"clientTest"},
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 		NotBefore: nil,
@@ -210,8 +234,4 @@ func createTokenWithScopesAndRoles(t *testing.T, pk *rsa.PrivateKey, issuer stri
 		t.Fatal(err)
 	}
 	return s
-}
-
-func createToken(t *testing.T, pk *rsa.PrivateKey, issuer string, setExpired bool, keyID ...string) string {
-	return createTokenWithScopesAndRoles(t, pk, issuer, setExpired, []string{"profile", "cidaas:compromissed_credentials"}, nil, keyID...)
 }

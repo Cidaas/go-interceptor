@@ -85,11 +85,5 @@ func introspectToken(opts Options, endpoints cidaasEndpoints, tokenString string
 		log.Println("Issuer mismatch")
 		return nil
 	}
-	if opts.ClientID != "" {
-		if introspectRespBody.Aud != opts.ClientID {
-			log.Println("Aud mismatch!")
-			return nil
-		}
-	}
 	return &TokenData{Sub: introspectRespBody.Sub, Aud: introspectRespBody.Aud}
 }

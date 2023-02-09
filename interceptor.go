@@ -7,15 +7,18 @@ import (
 	"net/http"
 )
 
+const anonymousSub = "ANONYMOUS"
+
 // SecurityOptions which should be passsed to restrict the api access
 type SecurityOptions struct {
 	Roles                 []string                 // roles which are allowed to access this api
 	Scopes                []string                 // scopes which are allowed to acces this api
 	Groups                []GroupValidationOptions // groups which are allowed to acces this api (only possible with introspect)
-	StrictRoleValidation  bool                     // true indicates that all provided roles must match (only possible with introspect)
-	StrictScopeValidation bool                     // true indicates that all provided scopes must match (also possible with the signature check)
-	StrictGroupValidation bool                     // true indicates that all provided groups must match (only possible with introspect)
-	StrictValidation      bool                     // true indicates that all provided roles, scopes and groups must match (the signature check just checks for the scopes)
+	AllowAnonymousSub     bool                     // false (by default) indicates that tokens which have an anonymous sub are rejected, true indicates that tokens which have an ANONYMOUS sub are allowed (only possible with the signature check for now)
+	StrictRoleValidation  bool                     // by default false, true indicates that all provided roles must match (only possible with introspect)
+	StrictScopeValidation bool                     // by default false, true indicates that all provided scopes must match (also possible with the signature check)
+	StrictGroupValidation bool                     // by default false, true indicates that all provided groups must match (only possible with introspect)
+	StrictValidation      bool                     // by default false, true indicates that all provided roles, scopes and groups must match (the signature check just checks for the scopes)
 }
 
 // GroupValidationOptions provides options to allow API access only to certain groups
@@ -81,7 +84,7 @@ func newInterceptor(opts Options) (cidaasEndpoints, Jwks, error) {
 }
 
 // CheckScopesAndRoles based on Introspect Response and requested scopes and roles
-func checkScopesAndRoles(tokenScopes []string, tokenRoles []string, apiOptions SecurityOptions) bool {
+func checkScopesAndRoles(tokenScopes []string, tokenRoles []string, apiOptions SecurityOptions, isAnonymous bool) bool {
 	scopesValid := true
 	rolesValid := true
 	rolesRequested := false
@@ -103,7 +106,7 @@ func checkScopesAndRoles(tokenScopes []string, tokenRoles []string, apiOptions S
 			}
 		}
 	}
-	if len(apiOptions.Roles) > 0 {
+	if len(apiOptions.Roles) > 0 && !isAnonymous {
 		rolesRequested = true
 		// Check for request roles in token data
 		if apiOptions.StrictRoleValidation {

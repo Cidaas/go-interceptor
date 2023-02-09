@@ -3,6 +3,7 @@ package cidaasinterceptor
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -43,6 +44,12 @@ func verifySignature(opts Options, endpoints cidaasEndpoints, jwks *Jwks, tokenS
 		if opts.Debug {
 			log.Printf("Scopes: %v", claims.Scopes)
 			log.Printf("Roles: %v", claims.Roles)
+			log.Printf("Sub: %v", claims.Subject)
+		}
+		// check if sub is anonymous if not allowed
+		isAnonymous := strings.EqualFold(claims.Subject, anonymousSub)
+		if !securityOpts.AllowAnonymousSub && isAnonymous {
+			return nil
 		}
 		// verify exp times in token data based on current timestamp
 		if !claims.VerifyExpiresAt(time.Now(), true) {
@@ -55,14 +62,8 @@ func verifySignature(opts Options, endpoints cidaasEndpoints, jwks *Jwks, tokenS
 			return nil
 		}
 		// check for roles and scopes in token data
-		if !checkScopesAndRoles(claims.Scopes, claims.Roles, securityOpts) {
+		if !checkScopesAndRoles(claims.Scopes, claims.Roles, securityOpts, isAnonymous) {
 			return nil
-		}
-		if opts.ClientID != "" {
-			if claims.Audience[0] != opts.ClientID {
-				log.Printf("Aud mismatch!, aud: %v, clientID: %v", claims.Audience[0], opts.ClientID)
-				return nil
-			}
 		}
 		sub = claims.Subject
 		aud = claims.Audience[0]

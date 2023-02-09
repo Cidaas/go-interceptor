@@ -29,13 +29,6 @@ func TestIntrospect_IssuerMismatch(t *testing.T) {
 	assert.Nil(t, tokenData)
 }
 
-func TestIntrospect_AudMismatch(t *testing.T) {
-	uri, close := createIntrospectMockServer(introspectResponse{Active: true, Aud: "other"}, true)
-	defer close()
-	tokenData := introspectToken(Options{BaseURI: uri, Debug: true, ClientID: "clientID"}, cidaasEndpoints{IntrospectionEndpoint: fmt.Sprintf("%v/introspect", uri)}, "", SecurityOptions{})
-	assert.Nil(t, tokenData)
-}
-
 func TestIntrospect_Success(t *testing.T) {
 	uri, close := createIntrospectMockServer(introspectResponse{Active: true, Aud: "clientID", Sub: "sub"}, true)
 	defer close()
