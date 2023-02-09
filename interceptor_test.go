@@ -116,60 +116,60 @@ func TestFailure_CheckScopesAndRoles_NotAllRolesMatch(t *testing.T) {
 func TestSuccess_ContainsScopesSameArray(t *testing.T) {
 	requestedData := []string{"TestScope", "openid", "profile"}
 	tokenData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(tokenData, requestedData)
+	isValid := contains(tokenData, requestedData)
 	assert.True(t, isValid, "Requested scopes should be in tokenData")
 }
 
 func TestSuccess_ContainsScopesRequestedDataArrayWithLessItems(t *testing.T) {
 	tokenData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(tokenData, nil)
+	isValid := contains(tokenData, nil)
 	assert.True(t, isValid, "Requested scopes should be in tokenData")
 }
 
 func TestSuccess_ContainsWithEmptyArray(t *testing.T) {
 	tokenData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(tokenData, []string{})
+	isValid := contains(tokenData, []string{})
 	assert.True(t, isValid, "Requested scopes should be in tokenData")
 }
 
 func TestSuccess_ContainsWithEmptyTokenData(t *testing.T) {
 	requestData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(nil, requestData)
+	isValid := contains(nil, requestData)
 	assert.False(t, isValid)
 }
 
 func TestFailure_ContainsWithStrictValidation(t *testing.T) {
 	tokenData := []string{"TestScope", "openid"}
 	requestData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(tokenData, requestData)
+	isValid := contains(tokenData, requestData)
 	assert.False(t, isValid)
 }
 
 func TestSuccess_ContainsWithStrictValidation(t *testing.T) {
 	tokenData := []string{"TestScope", "openid", "profile"}
 	requestData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(tokenData, requestData)
+	isValid := contains(tokenData, requestData)
 	assert.True(t, isValid)
 }
 
 func TestFailure_ContainsNoMatch(t *testing.T) {
 	tokenData := []string{"test", "scope", "user"}
 	requestData := []string{"TestScope", "openid", "profile"}
-	isValid := Contains(tokenData, requestData)
+	isValid := contains(tokenData, requestData)
 	assert.False(t, isValid)
 }
 
 func TestSuccess_ContainsMatch(t *testing.T) {
 	tokenData := []string{"test", "scope", "profile"}
 	requestData := []string{"TestScope", "openid", "profile"}
-	isValid := ContainsAny(tokenData, requestData)
+	isValid := containsAny(tokenData, requestData)
 	assert.True(t, isValid)
 }
 
 func TestSuccess_ContainsScopesRequestedDataArrayWithMoreItems(t *testing.T) {
 	requestedData := []string{"TestScope", "openid", "profile", "email"}
 	tokenData := []string{"TestScope", "openid", "profile"}
-	isValid := ContainsAny(tokenData, requestedData)
+	isValid := containsAny(tokenData, requestedData)
 	assert.True(t, isValid, "Requested scopes should be more than in tokenData")
 }
 
