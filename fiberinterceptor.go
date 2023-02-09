@@ -15,7 +15,7 @@ const FiberTokenDataKey = "tokendata"
 type FiberInterceptor struct {
 	Options   Options
 	endpoints cidaasEndpoints
-	jwks      *Jwks
+	jwks      Jwks
 }
 
 // NewFiberInterceptor returns a newly constructed cidaasInterceptor instance with the provided options
@@ -27,7 +27,7 @@ func NewFiberInterceptor(opts Options) (*FiberInterceptor, error) {
 	return &FiberInterceptor{
 		Options:   opts,
 		endpoints: cidaasEndpoints,
-		jwks:      &keys,
+		jwks:      keys,
 	}, nil
 }
 
@@ -39,7 +39,7 @@ func (m *FiberInterceptor) VerifyTokenBySignature(apiOptions SecurityOptions) fi
 			log.Printf("Error getting token from Header")
 			return ctx.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
-		tokenData := verifySignature(m.Options, m.endpoints, m.jwks, tokenString, apiOptions)
+		tokenData := verifySignature(m.Options, m.endpoints, &m.jwks, tokenString, apiOptions)
 		if tokenData == nil {
 			return ctx.Status(fiber.StatusUnauthorized).SendString("Invalid token")
 		}

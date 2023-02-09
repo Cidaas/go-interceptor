@@ -91,13 +91,13 @@ func checkScopesAndRoles(tokenScopes []string, tokenRoles []string, apiOptions S
 		// Check for request scopes in token data
 		if apiOptions.StrictScopeValidation {
 			// check all requested scopes are present in token
-			if !Contains(tokenScopes, apiOptions.Scopes) {
+			if !contains(tokenScopes, apiOptions.Scopes) {
 				log.Println("Scopes mismatch")
 				scopesValid = false
 			}
 		} else {
 			// check any one of the requested scopes are present in token
-			if !ContainsAny(tokenScopes, apiOptions.Scopes) {
+			if !containsAny(tokenScopes, apiOptions.Scopes) {
 				log.Println("Scopes mismatch")
 				scopesValid = false
 			}
@@ -108,13 +108,13 @@ func checkScopesAndRoles(tokenScopes []string, tokenRoles []string, apiOptions S
 		// Check for request roles in token data
 		if apiOptions.StrictRoleValidation {
 			// check all requested roles are present in token
-			if !Contains(tokenRoles, apiOptions.Roles) {
+			if !contains(tokenRoles, apiOptions.Roles) {
 				log.Println("Roles mismatch")
 				rolesValid = false
 			}
 		} else {
 			// check any one of the requested roles are present in token
-			if !ContainsAny(tokenRoles, apiOptions.Roles) {
+			if !containsAny(tokenRoles, apiOptions.Roles) {
 				log.Println("Roles mismatch")
 				rolesValid = false
 			}
@@ -123,24 +123,23 @@ func checkScopesAndRoles(tokenScopes []string, tokenRoles []string, apiOptions S
 	// validate both roles and scopes if strictValidation is applied
 	if apiOptions.StrictValidation {
 		return rolesValid && scopesValid
+	}
+	// selective validation based on roles/scopes requested in api security
+	if rolesRequested && scopesRequested {
+		return rolesValid || scopesValid
+	} else if !rolesRequested && scopesRequested {
+		return scopesValid
+	} else if rolesRequested && !scopesRequested {
+		return rolesValid
 	} else {
-		// selective validation based on roles/scopes requested in api security
-		if rolesRequested && scopesRequested {
-			return rolesValid || scopesValid
-		} else if !rolesRequested && scopesRequested {
-			return scopesValid
-		} else if rolesRequested && !scopesRequested {
-			return rolesValid
-		} else {
-			return true
-		}
+		return true
 	}
 }
 
-// Contains Call checking if scopes/roles in the tokendata
-func Contains(tokenData []string, RequestedData []string) bool {
+// contains Call checking if scopes/roles in the tokendata
+func contains(tokenData []string, requestedData []string) bool {
 	matchedCount := 0
-	for _, r := range RequestedData {
+	for _, r := range requestedData {
 		for _, t := range tokenData {
 			if t == r {
 				matchedCount++
@@ -148,12 +147,12 @@ func Contains(tokenData []string, RequestedData []string) bool {
 			}
 		}
 	}
-	return matchedCount == len(RequestedData)
+	return matchedCount == len(requestedData)
 }
 
-// ContainsAny check if any one of the tokenData matches with requestedData
-func ContainsAny(tokenData []string, RequestedData []string) bool {
-	for _, r := range RequestedData {
+// containsAny check if any one of the tokenData matches with requestedData
+func containsAny(tokenData []string, requestedData []string) bool {
+	for _, r := range requestedData {
 		for _, t := range tokenData {
 			if t == r {
 				return true
