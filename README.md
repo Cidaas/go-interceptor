@@ -52,7 +52,7 @@ type GroupValidationOptions struct {
 #### Breaking changes
 
 * Instead of passing the scopes and roles in order to verify the token, you now need to pass an object with different options, which is explained above
-* Now tokens which have **NO SUB** are rejected by default, if you want to allow this you need to enable SecurityOptions.AllowAnonymousSub flag, which is **false** by default
+* Now tokens which have **NO SUB** are rejected by default, if you want to allow this you need to enable the SecurityOptions.AllowAnonymousSub flag, which is *false* by default
 
 ## Usage
 
@@ -111,6 +111,11 @@ func main() {
 	}
 	getHandler := http.HandlerFunc(get)
 	api.Handle("/", cidaasInterceptor.VerifyTokenBySignature(getHandler, cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	})).Methods(http.MethodGet)
+	api.Handle("/user", cidaasInterceptor.VerifyTokenBySignature(getHandler, cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
 		Scopes: []string{"your scope"},
 		Roles: []string{"role:Admin"},
 	})).Methods(http.MethodGet)
@@ -207,6 +212,10 @@ func main() {
 	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
 		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
 	})).Methods(http.MethodGet)
+	api.Handle("/user", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
+	})).Methods(http.MethodGet)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 ```
@@ -263,6 +272,11 @@ func CreateApp() (*fiber.App, error) {
 	app := fiber.New()
 	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
 	root.Post("/user", interceptor.VerifyTokenBySignature(cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	}), handler.UserHandler)
+	root.Post("/groups", interceptor.VerifyTokenBySignature(cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
 		Scopes: []string{"your scope"},
 		Roles: []string{"role:Admin"},
 	}), handler.UserHandler)
