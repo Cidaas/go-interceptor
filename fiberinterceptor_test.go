@@ -1,91 +1,165 @@
 package cidaasinterceptor
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/stretchr/testify/assert"
 	"net/http"
+	"net/http/httptest"
 	"testing"
-	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestFiberInterceptor_VerifyTokenBySignature(t *testing.T) {
-	token := jwt.New(jwt.SigningMethodRS256)
-	token.Header["kid"] = "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536"
-	registeredClaims := jwt.RegisteredClaims{
-		Issuer:    "https://base.cidaas.de",
-		Subject:   "ANONYMOUS",
-		Audience:  jwt.ClaimStrings{"clientTest"},
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(1000 * time.Second)),
-		NotBefore: nil,
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ID:        "7da05fac-0f79-4925-bb58-ab9602cb581f",
-	}
-	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, RegisteredClaims: registeredClaims}
-	rsakey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	s, _ := token.SignedString(rsakey)
-	key1 := JSONWebKey{N: base64.RawURLEncoding.EncodeToString(rsakey.N.Bytes()), E: "AQAB", Alg: "RS256", Use: "sig", Kid: "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536", Kty: "RSA"}
-	key2 := JSONWebKey{N: "ntest", E: "AQAB", Alg: "RS256", Use: "sig", Kid: "kidtest2", Kty: "RSA"}
-	jwks := Jwks{[]JSONWebKey{key1, key2}}
+func TestNewFiberInterceptor_Error(t *testing.T) {
+	interceptor, err := NewFiberInterceptor(Options{})
+	assert.Error(t, err)
+	assert.Nil(t, interceptor)
+}
 
-	cidaasInterceptor := FiberInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "clientTest"}, cidaasEndpoints{}, jwks}
-	app := fiber.New()
-	app.Get("/check", cidaasInterceptor.VerifyTokenBySignature([]string{"profile", "cidaas:compromissed_credentials"}, nil), checkHandler)
+func TestNewFiberInterceptor_Success(t *testing.T) {
+	jwks, _ := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri})
+	assert.NoError(t, err)
+	assert.NotNil(t, interceptor)
+}
 
-	req, err := http.NewRequest("GET", "/check", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %v", s))
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestFiberInterceptor_VerifyTokenBySignature_NoToken(t *testing.T) {
+	jwks, _ := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri})
+	assert.NoError(t, err)
+	assert.NotNil(t, interceptor)
 
-	res, err := app.Test(req, 60*1000)
-	assert.Nil(t, err, "expected no error while calling endpoint")
+	res := doFiberRequest(t, "", interceptor.VerifyTokenBySignature(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+}
+
+func TestFiberInterceptor_VerifyTokenBySignature_InvalidToken(t *testing.T) {
+	jwks, _ := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	token := createToken(t, nil, uri, false)
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri})
+	assert.NoError(t, err)
+	assert.NotNil(t, interceptor)
+	res := doFiberRequest(t, token, interceptor.VerifyTokenBySignature(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+}
+
+func TestFiberInterceptor_VerifyTokenBySignature_Success(t *testing.T) {
+	jwks, pk := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	token := createToken(t, pk, uri, false)
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri})
+	assert.NoError(t, err)
+	res := doFiberRequest(t, token, interceptor.VerifyTokenBySignature(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
 	var tokenData TokenData
 	json.NewDecoder(res.Body).Decode(&tokenData)
 	assert.Equal(t, "clientTest", tokenData.Aud, "Aud in tokenData should be passed as context in request and be equal")
-	assert.Equal(t, "ANONYMOUS", tokenData.Sub, "Sub in tokenData should be passed as context in request and be equal")
-	assert.Equal(t, fiber.StatusOK, res.StatusCode, "handler should return 200 status code")
+	assert.Equal(t, "sub", tokenData.Sub, "Sub in tokenData should be passed as context in request and be equal")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "handler should return 200 status code")
 }
 
-func TestFiberInterceptor_VerifyTokenByIntrospect(t *testing.T) {
-	token := jwt.New(jwt.SigningMethodRS256)
-	token.Header["kid"] = "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536"
-	registeredClaims := jwt.RegisteredClaims{
-		Issuer:    "https://base.cidaas.de",
-		Subject:   "ANONYMOUS",
-		Audience:  jwt.ClaimStrings{"clientTest"},
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(1000 * time.Second)),
-		NotBefore: nil,
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ID:        "7da05fac-0f79-4925-bb58-ab9602cb581f",
-	}
-	token.Claims = cidaasTokenClaims{Scopes: []string{"profile", "cidaas:compromissed_credentials"}, RegisteredClaims: registeredClaims}
-	rsakey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	s, _ := token.SignedString(rsakey)
-	key1 := JSONWebKey{N: base64.RawURLEncoding.EncodeToString(rsakey.N.Bytes()), E: "AQAB", Alg: "RS256", Use: "sig", Kid: "a6ef4de0-9a6f-4604-8fc5-f26f86b3a536", Kty: "RSA"}
-	key2 := JSONWebKey{N: "ntest", E: "AQAB", Alg: "RS256", Use: "sig", Kid: "kidtest2", Kty: "RSA"}
-	jwks := Jwks{[]JSONWebKey{key1, key2}}
+func TestFiberInterceptor_VerifyTokenBySignature_SuccessAfterKeyNotFound(t *testing.T) {
+	calls := 0
+	jwks, pk := createJwksKeys(t, nil)
+	var mockServer *httptest.Server
+	mockHandler := http.NewServeMux()
+	mockHandler.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(cidaasEndpoints{
+			JwksURI: fmt.Sprintf("%v/.well-known/jwks.json", mockServer.URL),
+		})
+	})
+	mockHandler.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			json.NewEncoder(w).Encode(jwks)
+			return
+		}
+		jwks.Keys[0].Kid = "newKey"
+		fmt.Println(jwks)
+		json.NewEncoder(w).Encode(jwks)
+	})
+	mockServer = httptest.NewServer(mockHandler)
+	defer mockServer.Close()
+	token := createToken(t, pk, mockServer.URL, false, "newKey")
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: mockServer.URL})
+	assert.NoError(t, err)
+	var tokenData TokenData
+	// first call
+	res := doFiberRequest(t, token, interceptor.VerifyTokenBySignature(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	json.NewDecoder(res.Body).Decode(&tokenData)
+	assert.Equal(t, "clientTest", tokenData.Aud, "Aud in tokenData should be passed as context in request and be equal")
+	assert.Equal(t, "sub", tokenData.Sub, "Sub in tokenData should be passed as context in request and be equal")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "handler should return 200 status code")
+	// second call ensures that the cache of the keys has been updated correctly
+	res = doFiberRequest(t, token, interceptor.VerifyTokenBySignature(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	json.NewDecoder(res.Body).Decode(&tokenData)
+	assert.Equal(t, "clientTest", tokenData.Aud, "Aud in tokenData should be passed as context in request and be equal")
+	assert.Equal(t, "sub", tokenData.Sub, "Sub in tokenData should be passed as context in request and be equal")
+	assert.Equal(t, http.StatusOK, res.StatusCode, "handler should return 200 status code")
+	assert.Equal(t, 2, calls)
+}
 
-	cidaasInterceptor := FiberInterceptor{Options{BaseURI: "https://base.cidaas.de", ClientID: "clientTest"}, cidaasEndpoints{}, jwks}
+func TestFiberInterceptor_VerifyTokenByIntrospect_NoToken(t *testing.T) {
+	jwks, _ := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri, Debug: true})
+	assert.NoError(t, err)
+	res := doFiberRequest(t, "", interceptor.VerifyTokenByIntrospect(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+}
+
+func TestFiberInterceptor_VerifyTokenByIntrospect_InvalidToken(t *testing.T) {
+	jwks, _ := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	token := createToken(t, nil, uri, false)
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri, Debug: true})
+	assert.NoError(t, err)
+	introspectURI, closeIntrospectSrv := createIntrospectMockServer(introspectResponse{Active: false})
+	defer closeIntrospectSrv()
+	interceptor.endpoints = cidaasEndpoints{IntrospectionEndpoint: fmt.Sprintf("%v/introspect", introspectURI)}
+	res := doFiberRequest(t, token, interceptor.VerifyTokenByIntrospect(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+}
+
+func TestFiberInterceptor_VerifyTokenByIntrospect_Success(t *testing.T) {
+	jwks, pk := createJwksKeys(t, nil)
+	uri, _, close := createWellKnownMockServer(jwks)
+	defer close()
+	token := createToken(t, pk, uri, false)
+	interceptor, err := NewFiberInterceptor(Options{BaseURI: uri, Debug: true})
+	assert.NoError(t, err)
+	introspectURI, closeIntrospectSrv := createIntrospectMockServer(introspectResponse{Active: true, Iss: uri})
+	defer closeIntrospectSrv()
+	interceptor.endpoints = cidaasEndpoints{IntrospectionEndpoint: fmt.Sprintf("%v/introspect", introspectURI)}
+	res := doFiberRequest(t, token, interceptor.VerifyTokenByIntrospect(SecurityOptions{Scopes: []string{"profile", "cidaas:compromissed_credentials"}}))
+	var tokenData TokenData
+	json.NewDecoder(res.Body).Decode(&tokenData)
+	assert.Equal(t, http.StatusOK, res.StatusCode, "handler should return 200 status code")
+}
+
+func doFiberRequest(t *testing.T, token string, interceptorHandler func(*fiber.Ctx) error) *http.Response {
 	app := fiber.New()
-	app.Get("/check", cidaasInterceptor.VerifyTokenByIntrospect([]string{"profile", "cidaas:compromissed_credentials"}, nil), checkHandler)
-
-	req, err := http.NewRequest("GET", "/check", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %v", s))
+	app.Get("/check", interceptorHandler, checkHandler)
+	req, err := http.NewRequest(http.MethodGet, "/check", nil)
+	req.Header.Set("Authorization", fmt.Sprintf("bearer %v", token))
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	res, err := app.Test(req, 60*1000)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.Nil(t, err, "expected no error while calling endpoint")
-	var tokenData TokenData
-	json.NewDecoder(res.Body).Decode(&tokenData)
-	assert.Equal(t, fiber.StatusUnauthorized, res.StatusCode, "handler should return 200 status code")
+	return res
 }
 
 func checkHandler(ctx *fiber.Ctx) error {
