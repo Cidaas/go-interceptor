@@ -52,7 +52,7 @@ type GroupValidationOptions struct {
 #### Breaking changes
 
 * Instead of passing the scopes and roles in order to verify the token, you now need to pass an object with different options, which is explained above
-* Now tokens which hav **NO SUB** are rejected by default, if you want to allow is you need to enabled the SecurityOptions.AllowAnonymousSub flag, which is*false* by default
+* Now tokens which have **NO SUB** are rejected by default, if you want to allow this you need to enable SecurityOptions.AllowAnonymousSub flag, which is **false** by default
 
 ## Usage
 
