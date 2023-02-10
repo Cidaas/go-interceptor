@@ -12,18 +12,61 @@
 
 ## How to install
 
+### Version 1.x.x
+
 `go get github.com/Cidaas/go-interceptor`
+
+This version allows to secure your APIs by passing **scopes or roles** to the interceptor which can be either validated by introspecting the access token or checking its signature.
+
+### Version 2.x.x
+
+`go get github.com/Cidaas/go-interceptor/v2`
+
+This version allows to secure your APIs by passing **security options** to the interceptor which can be either validated by introspecting the access token or checking its signature. You can pass the following options to the interceptor:
+
+> For the signature validation only the scopes can be validated in a strict way
+
+```go
+// SecurityOptions which should be passsed to restrict the api access
+type SecurityOptions struct {
+	Roles                 []string                 // roles which are allowed to access this api
+	Scopes                []string                 // scopes which are allowed to acces this api
+	Groups                []GroupValidationOptions // groups which are allowed to acces this api (only possible with introspect)
+	AllowAnonymousSub     bool                     // false (by default) indicates that tokens which have an anonymous sub are rejected, true indicates that tokens which have an ANONYMOUS sub are allowed (only possible with the signature check for now)
+	StrictRoleValidation  bool                     // by default false, true indicates that all provided roles must match (only possible with introspect)
+	StrictScopeValidation bool                     // by default false, true indicates that all provided scopes must match (also possible with the signature check)
+	StrictGroupValidation bool                     // by default false, true indicates that all provided groups must match (only possible with introspect)
+	StrictValidation      bool                     // by default false, true indicates that all provided roles, scopes and groups must match (the signature check just checks for the scopes)
+}
+
+// GroupValidationOptions provides options to allow API access only to certain groups
+type GroupValidationOptions struct {
+	GroupID              string   `json:"groupId"`              // the group id to match
+	GroupType            string   `json:"groupType"`            // the group type to match
+	Roles                []string `json:"roles"`                // the roles to match
+	StrictRoleValidation bool     `json:"strictRoleValidation"` // true indicates that all roles must match
+	StrictValidation     bool     `json:"strictValidation"`     // true indicates that the group id, group type and all roles must match
+}
+```
+
+#### Breaking changes
+
+* Instead of passing the scopes and roles in order to verify the token, you now need to pass an object with different options, which is explained above
+* Now tokens which have **NO SUB** are rejected by default, if you want to allow this you need to enable the SecurityOptions.AllowAnonymousSub flag, which is *false* by default
 
 ## Usage
 
 The cidaas go interceptor can be used to secure APIs in golang. 
 
+### net/http
+The following examples will show how to use the interceptor if you are using the net/http package for your APIs.
+
 **Attached an example how to secure an API with scopes and roles based on the signature of a token:**
 
-```go
+#### Version 1.x.x
 
+```go
 func get(w http.ResponseWriter, r *http.Request) {
-    ...
 	// set response to ok and return Status ok and response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -34,26 +77,83 @@ func get(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
-
 	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
 	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
-
 	if err != nil {
 		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
 		panic("Panic!")
 	}
-
 	getHandler := http.HandlerFunc(get)
-	api.Handle("", cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:api_scope"}, nil)).Methods(http.MethodGet)
+	api.Handle("/", cidaasInterceptor.VerifyTokenBySignature(getHandler, []string{"profile", "cidaas:api_scope"}, []string{"role:Admin"})).Methods(http.MethodGet)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
+```
 
+#### Version 2.x.x
+
+```go
+func get(w http.ResponseWriter, r *http.Request) {
+	// set response to ok and return Status ok and response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(respJSON))
+	return
+}
+
+func main() {
+	r := mux.NewRouter()
+	api := r.PathPrefix("/api/v2").Subrouter()
+	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
+	if err != nil {
+		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
+		panic("Panic!")
+	}
+	getHandler := http.HandlerFunc(get)
+	api.Handle("/", cidaasInterceptor.VerifyTokenBySignature(getHandler, cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	})).Methods(http.MethodGet)
+	api.Handle("/user", cidaasInterceptor.VerifyTokenBySignature(getHandler, cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	})).Methods(http.MethodGet)
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
 ```
 
 **Attached an example how to secure an API with scopes and roles based on an introspect call to the cidaas instance:**
 
-```go
+#### Version 1.x.x
 
+```go
+func get(w http.ResponseWriter, r *http.Request) {
+	// set response to ok and return Status ok and response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(respJSON))
+	return
+}
+
+func main() {
+	r := mux.NewRouter()
+	api := r.PathPrefix("/api/v1").Subrouter()
+	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
+	if err != nil {
+		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
+		panic("Panic!")
+	}
+	getHandler := http.HandlerFunc(get)
+	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:api_scope"}, nil)).Methods(http.MethodGet)
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
+```
+
+#### Version 2.x.x
+
+```go
 func get(w http.ResponseWriter, r *http.Request) {
     ...
 	// set response to ok and return Status ok and response
@@ -66,39 +166,75 @@ func get(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
-
 	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
-	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID")
-
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
 	if err != nil {
-log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
-panic("Panic!")
+		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
+		panic("Panic!")
+	}
+	getHandler := http.HandlerFunc(get)
+	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	})).Methods(http.MethodGet)
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
-
-getHandler := http.HandlerFunc(get)
-api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, []string{"profile", "cidaas:api_scope"}, nil)).Methods(http.MethodGet)
-log.Fatal(http.ListenAndServe(":8080", r))
-}
-
 ```
 
-### [Fiber](https://github.com/gofiber/fiber) integration
+**Attached an example how to secure an API with groups based on an introspect call to the cidaas instance:**
 
-Add [Fiber Adaptor](https://github.com/gofiber/adaptor ) to your project
+#### Version 1.x.x
+
+> Not supported
+
+#### Version 2.x.x
+
+```go
+func get(w http.ResponseWriter, r *http.Request) {
+    ...
+	// set response to ok and return Status ok and response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(respJSON))
+	return
+}
+
+func main() {
+	r := mux.NewRouter()
+	api := r.PathPrefix("/api/v1").Subrouter()
+	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
+	if err != nil {
+		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
+		panic("Panic!")
+	}
+	getHandler := http.HandlerFunc(get)
+	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
+	})).Methods(http.MethodGet)
+	api.Handle("/user", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
+	})).Methods(http.MethodGet)
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
+```
+
+### [Fiber](https://github.com/gofiber/fiber)
+The following examples will show how to use the interceptor if you are using the fiber web framework for your APIs.
+
+#### How to install
 
 ```
 go get -u github.com/gofiber/fiber/v2
 ```
 
-then use cidaasinterceptor as following Code snippet
+**Attached an example how to secure an API with scopes and roles based on the signature token validation and also with the introspect call:**
+
+#### Version 1.x.x
+
 ```go
-
-import (
-	cidaasinterceptor "github.com/Cidaas/go-interceptor"
-)
-
 func CreateApp() (*fiber.App, error) {
-
 	interceptor, err := cidaasinterceptor.NewFiberInterceptor(cidaasinterceptor.Options{
 		BaseURI:  BaseUrl,
 		ClientID: Client_id,
@@ -106,27 +242,10 @@ func CreateApp() (*fiber.App, error) {
 	if err != nil {
 		ls.Fatal().Err(err).Msg("can't initialize interceptor")
 	}
-
 	app := fiber.New()
-
-	app.Use(cors.New())
-	app.Use("/monit", monitor.New())
-	app.Get("/ping", func(ctx *fiber.Ctx) error {
-		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-			"data": "Pong",
-		})
-	})
-	//Root route
 	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
-
-	root.Get("/ping", func(ctx *fiber.Ctx) error {
-		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-			"data": "Pong",
-		})
-	})
-
-	root.Post("/user", inter.VerifyTokenBySignature([]string{}, []string{}), handler.UserHandler)
-
+	root.Post("/user", interceptor.VerifyTokenBySignature([]string{"profile", "cidaas:api_scope"}, []string{"role:Admin"}), handler.UserHandler)
+	root.Post("/user", interceptor.VerifyTokenByIntrospect([]string{"profile", "cidaas:api_scope"}, []string{"role:Admin"}), handler.UserHandler)
 	return app, nil
 }
 
@@ -139,4 +258,75 @@ func main()  {
 }
 ```
 
-Add required Scopes and Roles to your interceptor
+#### Version 2.x.x
+
+```go
+func CreateApp() (*fiber.App, error) {
+	interceptor, err := cidaasinterceptor.NewFiberInterceptor(cidaasinterceptor.Options{
+		BaseURI:  BaseUrl,
+		ClientID: Client_id,
+	})
+	if err != nil {
+		ls.Fatal().Err(err).Msg("can't initialize interceptor")
+	}
+	app := fiber.New()
+	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
+	root.Post("/user", interceptor.VerifyTokenBySignature(cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	}), handler.UserHandler)
+	root.Post("/groups", interceptor.VerifyTokenBySignature(cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	}), handler.UserHandler)
+	root.Post("/user", interceptor.VerifyTokenByIntrospect(cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	}), handler.UserHandler)
+	return app, nil
+}
+
+func main()  {
+    app, err := CreateApp()
+	if err != nil {
+		panic(err)
+    }
+	app.Listen(":3000")
+}
+```
+
+
+**Attached an example how to secure an API with groups with the introspect call:**
+
+#### Version 1.x.x
+
+> Not supported
+
+#### Version 2.x.x
+
+```go
+func CreateApp() (*fiber.App, error) {
+	interceptor, err := cidaasinterceptor.NewFiberInterceptor(cidaasinterceptor.Options{
+		BaseURI:  BaseUrl,
+		ClientID: Client_id,
+	})
+	if err != nil {
+		ls.Fatal().Err(err).Msg("can't initialize interceptor")
+	}
+	app := fiber.New()
+	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
+	root.Post("/user", interceptor.VerifyTokenByIntrospect(cidaasinterceptor.SecurityOptions{
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
+	}), handler.UserHandler)
+	return app, nil
+}
+
+func main()  {
+    app, err := CreateApp()
+	if err != nil {
+		panic(err)
+    }
+	app.Listen(":3000")
+}
+```
