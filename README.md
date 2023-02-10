@@ -27,15 +27,16 @@ This version allows to secure your APIs by passing **security options** to the i
 > For the signature validation only the scopes can be validated in a strict way
 
 ```go
-// SecurityOptions includes options which restrict the access of the APIs to secure
+// SecurityOptions which should be passsed to restrict the api access
 type SecurityOptions struct {
-	Roles                 []string // roles which are allowed to access this api
-	Scopes                []string // scopes which are allowed to acces this api
+	Roles                 []string                 // roles which are allowed to access this api
+	Scopes                []string                 // scopes which are allowed to acces this api
 	Groups                []GroupValidationOptions // groups which are allowed to acces this api (only possible with introspect)
-	StrictRoleValidation  bool // true indicates that all provided roles must match (only possible with introspect)
-	StrictScopeValidation bool // true indicates that all provided scopes must match (also possible with the signature check)
-	StrictGroupValidation bool // true indicates that all provided groups must match (only possible with introspect)
-	StrictValidation      bool // true indicates that all provided roles, scopes and groups must match (the signature check just checks for the scopes)
+	AllowAnonymousSub     bool                     // false (by default) indicates that tokens which have an anonymous sub are rejected, true indicates that tokens which have an ANONYMOUS sub are allowed (only possible with the signature check for now)
+	StrictRoleValidation  bool                     // by default false, true indicates that all provided roles must match (only possible with introspect)
+	StrictScopeValidation bool                     // by default false, true indicates that all provided scopes must match (also possible with the signature check)
+	StrictGroupValidation bool                     // by default false, true indicates that all provided groups must match (only possible with introspect)
+	StrictValidation      bool                     // by default false, true indicates that all provided roles, scopes and groups must match (the signature check just checks for the scopes)
 }
 
 // GroupValidationOptions provides options to allow API access only to certain groups
@@ -47,6 +48,11 @@ type GroupValidationOptions struct {
 	StrictValidation     bool     `json:"strictValidation"`     // true indicates that the group id, group type and all roles must match
 }
 ```
+
+#### Breaking changes
+
+* Instead of passing the scopes and roles in order to verify the token, you now need to pass an object with different options, which is explained above
+* Now tokens which have **NO SUB** are rejected by default, if you want to allow this you need to enable the SecurityOptions.AllowAnonymousSub flag, which is *false* by default
 
 ## Usage
 
@@ -104,7 +110,12 @@ func main() {
 		panic("Panic!")
 	}
 	getHandler := http.HandlerFunc(get)
-	api.Handle("/", cidaasInterceptor.VerifyTokenBySignature(getHandler, SecurityOptions{
+	api.Handle("/", cidaasInterceptor.VerifyTokenBySignature(getHandler, cidaasinterceptor.SecurityOptions{
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	})).Methods(http.MethodGet)
+	api.Handle("/user", cidaasInterceptor.VerifyTokenBySignature(getHandler, cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
 		Scopes: []string{"your scope"},
 		Roles: []string{"role:Admin"},
 	})).Methods(http.MethodGet)
@@ -129,7 +140,7 @@ func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
 	// Base URI is mandatory, ClientID is optional, if ClientID is set the interceptor will only allow requests from this Client
-	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID")
+	cidaasInterceptor, err := cidaasinterceptor.New(cidaasinterceptor.Options{BaseURI: "https://base.cidaas.de", ClientID: "clientID"})
 	if err != nil {
 		log.Panicf("Initialization of cidaas interceptor failed! Error: %v", err)
 		panic("Panic!")
@@ -162,7 +173,7 @@ func main() {
 		panic("Panic!")
 	}
 	getHandler := http.HandlerFunc(get)
-	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, SecurityOptions{
+	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
 		Scopes: []string{"your scope"},
 		Roles: []string{"role:Admin"},
 	})).Methods(http.MethodGet)
@@ -198,8 +209,12 @@ func main() {
 		panic("Panic!")
 	}
 	getHandler := http.HandlerFunc(get)
-	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, SecurityOptions{
-		Groups: []GroupValidationOptions{{GroupID: "yourGroupID"}},
+	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
+	})).Methods(http.MethodGet)
+	api.Handle("/user", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
 	})).Methods(http.MethodGet)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
@@ -256,11 +271,16 @@ func CreateApp() (*fiber.App, error) {
 	}
 	app := fiber.New()
 	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
-	root.Post("/user", interceptor.VerifyTokenBySignature(SecurityOptions{
+	root.Post("/user", interceptor.VerifyTokenBySignature(cidaasinterceptor.SecurityOptions{
 		Scopes: []string{"your scope"},
 		Roles: []string{"role:Admin"},
 	}), handler.UserHandler)
-	root.Post("/user", interceptor.VerifyTokenByIntrospect(SecurityOptions{
+	root.Post("/groups", interceptor.VerifyTokenBySignature(cidaasinterceptor.SecurityOptions{
+		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
+		Scopes: []string{"your scope"},
+		Roles: []string{"role:Admin"},
+	}), handler.UserHandler)
+	root.Post("/user", interceptor.VerifyTokenByIntrospect(cidaasinterceptor.SecurityOptions{
 		Scopes: []string{"your scope"},
 		Roles: []string{"role:Admin"},
 	}), handler.UserHandler)
@@ -296,8 +316,8 @@ func CreateApp() (*fiber.App, error) {
 	}
 	app := fiber.New()
 	root := app.Group(fmt.Sprintf("/%s", base.ServiceName))
-	root.Post("/user", interceptor.VerifyTokenByIntrospect(SecurityOptions{
-		Groups: []GroupValidationOptions{{GroupID: "yourGroupID"}},
+	root.Post("/user", interceptor.VerifyTokenByIntrospect(cidaasinterceptor.SecurityOptions{
+		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
 	}), handler.UserHandler)
 	return app, nil
 }

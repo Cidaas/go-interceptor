@@ -105,12 +105,21 @@ func TestVerifySignature_NoRoleInToken(t *testing.T) {
 	assert.Nil(t, tokenData)
 }
 
-func TestVerifySignature_AudMismatch(t *testing.T) {
+func TestVerifySignature_AllowAnonymousSub_Valid(t *testing.T) {
 	jwks, pk := createJwksKeys(t, nil)
 	uri, jwksURI, close := createWellKnownMockServer(jwks)
-	token := createToken(t, pk, uri, false)
+	token := createTokenWithScopesRolesSub(t, pk, uri, false, nil, nil, anonymousSub)
 	defer close()
-	tokenData := verifySignature(Options{BaseURI: uri, ClientID: "mismatch", Debug: true}, cidaasEndpoints{JwksURI: jwksURI}, &jwks, token, SecurityOptions{Scopes: []string{"profile"}})
+	tokenData := verifySignature(Options{BaseURI: uri, Debug: true}, cidaasEndpoints{JwksURI: jwksURI}, &jwks, token, SecurityOptions{Roles: []string{"role"}, AllowAnonymousSub: true})
+	assert.NotNil(t, tokenData)
+}
+
+func TestVerifySignature_AllowAnonymousSub_InValidScope(t *testing.T) {
+	jwks, pk := createJwksKeys(t, nil)
+	uri, jwksURI, close := createWellKnownMockServer(jwks)
+	token := createTokenWithScopesRolesSub(t, pk, uri, false, []string{"scope1"}, nil, anonymousSub)
+	defer close()
+	tokenData := verifySignature(Options{BaseURI: uri, Debug: true}, cidaasEndpoints{JwksURI: jwksURI}, &jwks, token, SecurityOptions{Scopes: []string{"scope2"}, Roles: []string{"role"}, AllowAnonymousSub: true})
 	assert.Nil(t, tokenData)
 }
 
