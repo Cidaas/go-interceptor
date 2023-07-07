@@ -2,13 +2,18 @@
 [![coverage report](https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-go-interceptor/badges/master/coverage.svg)](https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-go-interceptor/-/commits/master)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://gitlab.widas.de/cidaas-public-devkits/cidaas-interceptors/cidaas-go-interceptor/-/blob/master/LICENSE)
 
-# About cidaas:
-[cidaas](https://www.cidaas.com) is a fast and secure Cloud Identity & Access Management solution that standardises what’s important and simplifies what’s complex. The cidaas feature set includes:
-- Single Sign On (SSO) based on OAuth 2.0, OpenID Connect, SAML 2.0 
-- Multi-Factor-Authentication with more than 14 authentication methods, including TOTP and FIDO2 
-- Passwordless Authentication 
-- Social Login (e.g. Facebook, Google, LinkedIn and more) as well as Enterprise Identity Provider (e.g. SAML or AD) 
-- Security in Machine-to-Machine (M2M) and IoT
+![Logo](logo.jpg)
+
+## About cidaas:
+[cidaas](https://www.cidaas.com)
+ is a fast and secure Cloud Identity & Access Management solution that standardises what’s important and simplifies what’s complex.
+
+## Feature set includes:
+* Single Sign On (SSO) based on OAuth 2.0, OpenID Connect, SAML 2.0 
+* Multi-Factor-Authentication with more than 14 authentication methods, including TOTP and FIDO2 
+* Passwordless Authentication 
+* Social Login (e.g. Facebook, Google, LinkedIn and more) as well as Enterprise Identity Provider (e.g. SAML or AD) 
+* Security in Machine-to-Machine (M2M) and IoT
 
 ## How to install
 
