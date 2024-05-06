@@ -1,6 +1,6 @@
 include:
-  - project: 'widas/software-quality/gitlab-template-projects/widas-ci-templates'
-    file: 'golang/go-lib.yml'
+  - project: "widas/software-quality/gitlab-template-projects/widas-ci-templates"
+    file: "golang/golang-lib.yml"
 
 stages:
   - test
