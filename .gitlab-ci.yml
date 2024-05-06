@@ -3,6 +3,9 @@ include:
     file: "golang/golang-lib.yml"
 
 stages:
+  - prepare
   - test
-  - update-version
   - release
+
+test:
+  extends: .test
