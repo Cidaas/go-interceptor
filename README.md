@@ -66,9 +66,6 @@ The cidaas go interceptor can be used to secure APIs which use the net/http pack
 ### net/http
 The following examples will show how to use the interceptor if you are using the net/http package for your APIs.
 
-### net/http
-The following examples will show how to use the interceptor if you are using the net/http package for your APIs.
-
 **Attached an example how to secure an API with scopes and roles based on the signature of a token:**
 
 #### Version 1.x.x
