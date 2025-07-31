@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.9
-	github.com/golang-jwt/jwt/v4 v4.5.2
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.64.0
 )
