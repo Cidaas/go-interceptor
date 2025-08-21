@@ -61,7 +61,7 @@ type GroupValidationOptions struct {
 
 ## Usage
 
-The cidaas go interceptor can be used to secure APIs which use the net/http package or the fiber web framework in golang. 
+The cidaas go interceptor can be used to secure APIs which use the net/http package, the fiber web framework, or gRPC in golang. 
 
 ### net/http
 The following examples will show how to use the interceptor if you are using the net/http package for your APIs.
