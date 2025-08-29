@@ -36,7 +36,7 @@ This version allows to secure your APIs by passing **security options** to the i
 type SecurityOptions struct {
 	Roles                 []string                 // roles which are allowed to access this api
 	Scopes                []string                 // scopes which are allowed to acces this api
-	Groups                []GroupValidationOptions // groups which are allowed to acces this api (only possible with introspect)
+	Groups                []GroupValidationOptions // groups which are allowed to acces this api (only possible with introspect, not with signature verification)
 	AllowAnonymousSub     bool                     // false (by default) indicates that tokens which have an anonymous sub are rejected, true indicates that tokens which have an ANONYMOUS sub are allowed (only possible with the signature check for now)
 	StrictRoleValidation  bool                     // by default false, true indicates that all provided roles must match (only possible with introspect)
 	StrictScopeValidation bool                     // by default false, true indicates that all provided scopes must match (also possible with the signature check)
@@ -45,12 +45,14 @@ type SecurityOptions struct {
 }
 
 // GroupValidationOptions provides options to allow API access only to certain groups
+// Note: Group validation only works with token introspection, not with signature verification.
+// Either GroupID or GroupType should be specified (not both) to define the group criteria.
 type GroupValidationOptions struct {
-	GroupID              string   `json:"groupId"`              // the group id to match
-	GroupType            string   `json:"groupType"`            // the group type to match
-	Roles                []string `json:"roles"`                // the roles to match
-	StrictRoleValidation bool     `json:"strictRoleValidation"` // true indicates that all roles must match
-	StrictValidation     bool     `json:"strictValidation"`     // true indicates that the group id, group type and all roles must match
+	GroupID              string   `json:"groupId,omitempty"`              // the group id to match (use either GroupID or GroupType)
+	GroupType            string   `json:"groupType,omitempty"`            // the group type to match (use either GroupID or GroupType)
+	Roles                []string `json:"roles,omitempty"`                // the roles to match
+	StrictRoleValidation bool     `json:"strictRoleValidation,omitempty"` // true indicates that all roles must match
+	StrictValidation     bool     `json:"strictValidation,omitempty"`     // true indicates that the group id, group type and all roles must match
 }
 ```
 
@@ -159,18 +161,19 @@ grpcServer := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
 
 ```go
 // Verify token by introspection (more secure, validates token status)
+// Note: Group validation only works with introspection, not with signature verification
 interceptor := grpcInterceptor.VerifyTokenByIntrospect(cidaasinterceptor.SecurityOptions{
-    Scopes:                []string{"vault:kms_read", "vault:kms_manage"},
-    Roles:                 []string{"admin", "user"},
-    		Groups:                []cidaasinterceptor.GroupValidationOptions{
+	Scopes:                []string{"vault:kms_read", "vault:kms_manage"},
+	Roles:                 []string{"admin", "user"},
+		Groups:                []cidaasinterceptor.GroupValidationOptions{
 			{
-				GroupID:   "vault-users",
+				GroupID:   "vault-users", // Use either GroupID or GroupType, not both
 				Roles:     []string{"user"},
 			},
 		},
-    StrictScopeValidation: false,
-    StrictRoleValidation:  false,
-    StrictGroupValidation: false,
+	StrictScopeValidation: false,
+	StrictRoleValidation:  false,
+	StrictGroupValidation: false,
 })
 
 grpcServer := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
@@ -537,6 +540,8 @@ func main() {
 
 **Attached an example how to secure an API with groups based on an introspect call to the cidaas instance:**
 
+> **Note:** Group validation only works with token introspection, not with signature verification. This is because group information is not available in JWT tokens and requires a call to the cidaas introspection endpoint.
+
 #### Version 1.x.x
 
 > Not supported
@@ -564,7 +569,9 @@ func main() {
 	}
 	getHandler := http.HandlerFunc(get)
 	api.Handle("", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
-		Groups: []cidaasinterceptor.GroupValidationOptions{{GroupID: "yourGroupID"}},
+		Groups: []cidaasinterceptor.GroupValidationOptions{
+			{GroupID: "yourGroupID", GroupType: "department"},
+		},
 	})).Methods(http.MethodGet)
 	api.Handle("/user", cidaasInterceptor.VerifyTokenByIntrospect(getHandler, cidaasinterceptor.SecurityOptions{
 		AllowAnonymousSub: true, // add this flag if you want to allow tokens with an anonymous sub
