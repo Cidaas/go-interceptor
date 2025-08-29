@@ -81,6 +81,54 @@ func (m *GrpcInterceptor) VerifyTokenByIntrospect(apiOptions SecurityOptions) gr
 	}
 }
 
+// VerifyTokenBySignatureWithEndpointValidation returns a gRPC unary interceptor that validates tokens by signature
+// with per-endpoint security options
+func (m *GrpcInterceptor) VerifyTokenBySignatureWithEndpointValidation(endpointSecurity func(string) SecurityOptions) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		tokenString, err := getTokenFromGrpcMetadata(ctx)
+		if err != nil {
+			log.Printf("Error getting token from gRPC metadata: %v", err)
+			return nil, status.Errorf(codes.Unauthenticated, "unauthorized: %v", err)
+		}
+
+		// Get security options for this specific endpoint
+		apiOptions := endpointSecurity(info.FullMethod)
+
+		tokenData := m.verifySignature(tokenString, apiOptions)
+		if tokenData == nil {
+			return nil, status.Error(codes.Unauthenticated, "invalid token")
+		}
+
+		// Add token data to gRPC context
+		ctxWithTokenData := context.WithValue(ctx, GrpcTokenDataKey, *tokenData)
+		return handler(ctxWithTokenData, req)
+	}
+}
+
+// VerifyTokenByIntrospectWithEndpointValidation returns a gRPC unary interceptor that validates tokens by introspection
+// with per-endpoint security options
+func (m *GrpcInterceptor) VerifyTokenByIntrospectWithEndpointValidation(endpointSecurity func(string) SecurityOptions) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		tokenString, err := getTokenFromGrpcMetadata(ctx)
+		if err != nil {
+			log.Printf("Error getting token from gRPC metadata: %v", err)
+			return nil, status.Errorf(codes.Unauthenticated, "unauthorized: %v", err)
+		}
+
+		// Get security options for this specific endpoint
+		apiOptions := endpointSecurity(info.FullMethod)
+
+		tokenData := m.introspectToken(tokenString, apiOptions)
+		if tokenData == nil {
+			return nil, status.Error(codes.Unauthenticated, "unauthorized")
+		}
+
+		// Add token data to gRPC context
+		ctxWithTokenData := context.WithValue(ctx, GrpcTokenDataKey, *tokenData)
+		return handler(ctxWithTokenData, req)
+	}
+}
+
 // getTokenFromGrpcMetadata extracts the token from gRPC metadata
 func getTokenFromGrpcMetadata(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
